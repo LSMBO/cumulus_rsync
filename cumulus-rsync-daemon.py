@@ -34,6 +34,7 @@ from flask import Flask
 from flask import jsonify
 from flask import request
 from flask import send_file
+import json
 import logging
 from logging.handlers import RotatingFileHandler
 import os
@@ -44,13 +45,14 @@ import time
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
 logging.basicConfig(
-				handlers=[RotatingFileHandler(filename = f"{__name__}.log", maxBytes = 100000, backupCount = 10)],
-				level=logging.INFO,
+				#handlers=[RotatingFileHandler(filename = f"{__name__}.log", maxBytes = 100000, backupCount = 10)],
+				level=logging.DEBUG,
 				format="[%(asctime)s] %(levelname)s [%(name)s.%(funcName)s:%(lineno)d] %(message)s",
 				datefmt='%Y/%m/%d %H:%M:%S')
 
 # default config
 STORAGE_PATH = "localhost" # the host where the cumulus server is, and the remote path where data will be sent
+#STORAGE_PORT = 8800
 STORAGE_USER = "me" # the remote user name
 STORAGE_KEY = os.path.abspath("cumulus.pem") # the public key to connect to the server, it has to be an absolute path
 REFRESH_RATE = 15 # the number of seconds before the daemon wakes up again and checks if there is something in the queue
@@ -61,6 +63,7 @@ f = open(__name__ + ".conf", "r")
 for line in f.read().splitlines():
 		[key, value] = list(map(lambda item: item.strip(), line.split("=")))
 		if key == "storage.path": STORAGE_PATH = value
+		#elif key == "storage.port": STORAGE_PORT = value
 		elif key == "storage.user": STORAGE_USER = value
 		elif key == "storage.public_key": STORAGE_KEY = os.path.abspath(value)
 		elif key == "refresh.rate": REFRESH_RATE = int(value)
@@ -68,6 +71,7 @@ for line in f.read().splitlines():
 f.close()
 
 # add RSync to path, (Windows only)
+# TODO put the rsync path in the config file
 if os.name == 'nt':
 	RSYNC_PATH = os.getcwd() + "/cwrsync_6.3.0_x64_free/bin/"
 	os.environ["PATH"] = RSYNC_PATH + ";" + os.environ["PATH"]
@@ -80,45 +84,51 @@ if os.name == 'nt':
 #   -l: login
 #   -i: the path to the public key
 #   -o 'StrictHostKeyChecking no': do not ask if the key has to be trusted
+#RSYNC_OPTIONS = f"-r --ignore-existing --exclude='*-wal' -e 'ssh -l {STORAGE_USER} -p {STORAGE_PORT} -i \"{STORAGE_KEY}\" -o \"StrictHostKeyChecking no\"'"
 RSYNC_OPTIONS = f"-r --ignore-existing --exclude='*-wal' -e 'ssh -l {STORAGE_USER} -i \"{STORAGE_KEY}\" -o \"StrictHostKeyChecking no\"'"
 # each time the user wants to send files, the files are put in a queue and a job id is returned; the queue and the id are not stored and will be reseted when the daemon is stopped
 SEND_QUEUE = list()
 # we use another queue to store the ids of the jobs canceled, so we do not have to worry about synchronizing the main queue between threads
 CANCEL_QUEUE = list()
 
+#logger.info(f"Cumulus RSync daemon is running, data will be sent to {STORAGE_USER}@{STORAGE_PATH}:{STORAGE_PORT}")
 logger.info(f"Cumulus RSync daemon is running, data will be sent to {STORAGE_USER}@{STORAGE_PATH}")
 
 def daemon():
-		while True:
-				#print("Daemon is waking up...")
-				if len(SEND_QUEUE) > 0:
-						# get the first and oldest entry in the queue
-						job_id, owner, file, nb, job_dir = SEND_QUEUE[0]
-						# do not send files that belong to cancelled jobs
-						if not job_id in CANCEL_QUEUE:
-								# make sure that a folder does not end with a slash
-								if os.path.isdir(file) and (file.endswith("/") or file.endswith("\\")): file = file[0:-1]
-								# send file with RSync
-								if os.path.isdir(file): logger.info(f"Sending directory '{file}'")
-								else: logger.info(f"Sending file '{file}'")
-								# cwrsync requires drives to be prepended (Windows only)
-								if os.name == 'nt': file = re.sub(r"^([A-Z]):", r"/cygdrive/\1", file.replace("\\", "/"))
-								# determine the remote folder (either main storage, or job folder)
-								remote_path = f"{STORAGE_PATH}/jobs/{job_dir}" if job_dir != "" else f"{STORAGE_PATH}/data"
-								# call RSync
-								os.system(f"rsync {RSYNC_OPTIONS} {file} {remote_path}")
-								logger.info(f"RSYNC: Transfer of '{file}' is finished, {len(SEND_QUEUE)} file(s) are left in the queue")
-						#else:
-						#		logger.info(f"Job {job_id} has been canceled")
-						# remove the item from the list
-						SEND_QUEUE.pop(0)
-						# clean the cancel queue eventually: remove all the ids that are lower to the current job id
-						for id in CANCEL_QUEUE:
-								if id < job_id: CANCEL_QUEUE.remove(id)
-				else:
-						# wait for 15 seconds
-						#print("RSYNC: Nothing to do, let's take a nap")
-						time.sleep(REFRESH_RATE)
+	while True:
+		#print("Daemon is waking up...")
+		if len(SEND_QUEUE) > 0:
+			# get the first and oldest entry in the queue
+			job_id, owner, file, nb, job_dir = SEND_QUEUE[0]
+			# do not send files that belong to cancelled jobs
+			if not job_id in CANCEL_QUEUE:
+				# make sure that a folder does not end with a slash
+				if os.path.isdir(file) and (file.endswith("/") or file.endswith("\\")): file = file[0:-1]
+				# determine the remote folder (either main storage, or job folder)
+				#print(f"Remote storage would be '{STORAGE_PATH}/jobs/{job_dir}' or '{STORAGE_PATH}/data'")
+				remote_path = f"{STORAGE_PATH}/jobs/{job_dir}" if job_dir != "" else f"{STORAGE_PATH}/data"
+				# send file with RSync
+				if os.path.isdir(file): logger.info(f"Sending directory '{os.path.basename(file)}' to '{remote_path}'")
+				else: logger.info(f"Sending file '{os.path.basename(file)}' to '{remote_path}'")
+				# cwrsync requires drives to be prepended (Windows only)
+				if os.name == 'nt': file = re.sub(r"^([A-Z]):", r"/cygdrive/\1", file.replace("\\", "/"))
+				# call RSync
+				#logger.debug(f"rsync {RSYNC_OPTIONS} \"{file}\" \"{remote_path}\"")
+				os.system(f"rsync {RSYNC_OPTIONS} \"{file}\" \"{remote_path}\"")
+				#logger.info(f"RSYNC: Transfer of '{file}' is finished, {len(SEND_QUEUE)} file(s) are left in the queue")
+			#else:
+			#		logger.info(f"Job {job_id} has been canceled")
+			# remove the item from the list
+			SEND_QUEUE.pop(0)
+			# clean the cancel queue eventually: remove all the ids that are lower to the current job id
+			job_id = int(job_id)
+			for id in CANCEL_QUEUE:
+				#print(f"id: '{id}' ({type(id)}) ; job_id: '{job_id}' ({type(job_id)})")
+				if id < job_id: CANCEL_QUEUE.remove(id)
+		else:
+			# wait for 15 seconds
+			#print("RSYNC: Nothing to do, let's take a nap")
+			time.sleep(REFRESH_RATE)
 
 @app.route("/")
 def hello_world():
@@ -128,24 +138,29 @@ def hello_world():
 def send_rsync():
 		# parameters are in request.form['param'] = value
 		# parameters are just a list of files with absolute pathes
-		result = request.form
-		job_id = result["job_id"]
-		job_dir = result["job_dir"]
-		owner = result["owner"]
+		settings = request.form
+		job_id = settings["job_id"]
+		job_dir = settings["job_dir"]
+		owner = settings["owner"]
 		#print(f"Calling /send-rsync from owner '{owner}' with job id {job_id}")
-		logger.info(f"Receiving send order for job {job_id}")
+		logger.info(f"Receiving files to upload for job {job_id}")
+		#logger.info(f"Receiving send order for job {job_id}, job directory: {job_dir}")
 		# for each file, add [job_id, job_owner, file_path] to the queue
-		files = result.getlist("files") # raw files
-		localFiles = result.getlist("local_files") # fasta files
-		nb = len(files) + len(localFiles)
-		for file in localFiles:
-			print(f"Add '{file}' to the queue, it will be sent to the directory for job {job_id}")
-			SEND_QUEUE.insert(0, [job_id, owner, file, nb, job_dir])
+		#files = settings.getlist("files") # raw files
+		#local_files = settings.getlist("local_files") # fasta files
+		files = json.loads(settings["files"]) # raw files
+		local_files = json.loads(settings["local_files"]) # fasta files
+		nb = len(files) + len(local_files)
+		# TODO also add total size, and a 0 for uploaded size (so we can monitor the progression from the gui)
+		# TODO or more simple: just keep the file name and it's percentage or its size as global variables
+		for file in local_files:
+			logger.info(f"Add '{os.path.basename(file)}' to the queue, it will be sent to {job_dir}")
+			SEND_QUEUE.append([job_id, owner, file, nb, job_dir])
 		for file in files:
-			print(f"Add '{file}' to the queue, it will be shared for all jobs")
-			SEND_QUEUE.insert(0, [job_id, owner, file, nb, ""])
+			logger.info(f"Add '{os.path.basename(file)}' to the queue, it will be shared for all jobs")
+			SEND_QUEUE.append([job_id, owner, file, nb, ""])
 		# send a blank file to the job folder to warn the controller that all the transfers are done for this job
-		SEND_QUEUE.insert(0, [job_id, owner, FINAL_FILE, nb, job_dir])
+		SEND_QUEUE.append([job_id, owner, FINAL_FILE, nb, job_dir])
 		return f"{nb} files have been added to the queue"
 
 @app.route("/list-rsync")
