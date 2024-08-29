@@ -90,6 +90,7 @@ if os.name == 'nt':
 #   -l: login
 #   -i: the path to the public key
 #   -o 'StrictHostKeyChecking no': do not ask if the key has to be trusted
+# TODO send the file even if it exists on receiver but with a different size
 #RSYNC_OPTIONS = f"-r --ignore-existing --exclude='*-wal' -e 'ssh -l {STORAGE_USER} -p {STORAGE_PORT} -i \"{STORAGE_KEY}\" -o \"StrictHostKeyChecking no\"'"
 RSYNC_OPTIONS = f"-r --ignore-existing --exclude='*-wal' --progress -e 'ssh -l {STORAGE_USER} -i \"{STORAGE_KEY}\" -o \"StrictHostKeyChecking no\"'"
 # each time the user wants to send files, the files are put in a queue and a job id is returned; the queue and the id are not stored and will be reseted when the daemon is stopped
@@ -225,6 +226,7 @@ def test():
 	[current_file, current_amount] = read_progress_file()
 	logger.info(f"> Progress of '{current_file}': {current_amount}%")
 	return f"'{current_file}': {current_amount*1}%"
+	
 
 @app.route("/progress-rsync/<string:owner>/<int:job_id>")
 def progress_rsync(owner, job_id):
@@ -238,16 +240,11 @@ def progress_rsync(owner, job_id):
 	# for each file, set a size of 0 unless it is the file being transferred (then set the percentage)
 	for file in SEND_QUEUE:
 		id, username, filename, nb, _, size = file
-		logger.info(f"ABU queue: id:{id};user:{username};file:'{filename}';nb:{nb};size:{size}")
 		if job_id == int(id) and owner == username:
-			logger.info("\tABU good job")
-			# TODO check that this condition actually works, it may have different paths
 			if os.path.basename(filename) == current_file:
-				logger.info(f"\tABU current file: '{filename}' == '{current_file}'")
 				#progress.append({filename: int(current_amount * 100 / size)})
 				progress[filename]= int(current_amount * 100 / size)
 			else:
-				logger.info(f"\tABU next in queue: '{filename}'")
 				#progress.append({filename: 0})
 				progress[filename]= 0
 	# return the dict with the files that are still in the queue
