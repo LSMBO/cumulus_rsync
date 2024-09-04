@@ -59,6 +59,7 @@ STORAGE_KEY = os.path.abspath("cumulus.pem") # the public key to connect to the 
 REFRESH_RATE = 15 # the number of seconds before the daemon wakes up again and checks if there is something in the queue
 FINAL_FILE = os.path.abspath(".cumulus.rsync") # a blank file to transfer at the end of each job, to tell the controller that all the files have been transferred
 PROGRESS_FILE = ".cumulus.progress"
+VERSION = ""
 
 # read the config file
 f = open(__name__ + ".conf", "r")
@@ -72,6 +73,7 @@ for line in f.read().splitlines():
 		elif key == "refresh.rate": REFRESH_RATE = int(value)
 		elif key == "final.file": FINAL_FILE = os.path.abspath(value)
 		elif key == "progress.file": PROGRESS_FILE = os.path.abspath(value)
+		elif key == "version": VERSION = value
 f.close()
 
 # add RSync to path, (Windows only)
@@ -142,9 +144,10 @@ def daemon():
 			# wait for 15 seconds
 			time.sleep(REFRESH_RATE)
 
+# TODO return a version number
+#def hello_world(): return "OK"
 @app.route("/")
-def hello_world():
-    return "OK"
+def config(): return VERSION
 
 def get_size(file):
 	if os.path.isfile(file):
