@@ -53,7 +53,7 @@ logging.basicConfig(
 # default config
 STORAGE_HOST = "localhost" # the host where the cumulus server is
 STORAGE_PATH = "/storage" # the remote path where data will be sent
-#STORAGE_PORT = 8800 # do not use a port already used on the controller (in this case by flask)
+STORAGE_PORT = 8800 # do not use a port already used on the controller (in this case by flask)
 STORAGE_USER = "me" # the remote user name
 STORAGE_KEY = os.path.abspath("cumulus.pem") # the public key to connect to the server, it has to be an absolute path
 REFRESH_RATE = 15 # the number of seconds before the daemon wakes up again and checks if there is something in the queue
@@ -67,7 +67,7 @@ for line in f.read().splitlines():
 		[key, value] = list(map(lambda item: item.strip(), line.split("=")))
 		if key == "storage.path": STORAGE_PATH = value
 		elif key == "storage.host": STORAGE_HOST = value
-		#elif key == "storage.port": STORAGE_PORT = value
+		elif key == "storage.port": STORAGE_PORT = value
 		elif key == "storage.user": STORAGE_USER = value
 		elif key == "storage.public_key": STORAGE_KEY = os.path.abspath(value)
 		elif key == "refresh.rate": REFRESH_RATE = int(value)
@@ -102,10 +102,23 @@ CANCEL_QUEUE = list()
 # global variables to store the progress of the file currently uploaded
 CURRENT_JOB = ""
 CURRENT_FILE = ""
-#CURRENT_FILE_SIZE = 0
-#CURRENT_PROGRESS = 0
+
+STORAGE_FREE_LIMIT = 10737418240 # below this amount of free space, there will be no upload (10GB by default)
+STORAGE_FREE_LIMIT_HR = STORAGE_FREE_LIMIT // 2**30
+STORAGE_FREE_LIMIT_SLEEP = 900 # wait 15 minutes between each check
 
 logger.info(f"Cumulus RSync daemon is running, data will be sent to {STORAGE_USER}@{STORAGE_HOST}:{STORAGE_PATH}")
+
+def check_server_disk_usage():
+	response = requests.get(f"http://{STORAGE_HOST}:{STORAGE_PORT}/diskusage")
+	free = response.json()[2]
+	if free < STORAGE_FREE_LIMIT:
+		while free < STORAGE_FREE_LIMIT:
+			logger.warning(f"Storage free space is below {STORAGE_FREE_LIMIT // 2**30}GB, uploads are paused for now...")
+			time.sleep(STORAGE_FREE_LIMIT_SLEEP)
+			response = requests.get(f"http://{STORAGE_HOST}:{STORAGE_PORT}/diskusage")
+			free = response.json()[2]
+		logger.info("Uploads will restart now")
 
 def daemon():
 	while True:
@@ -114,6 +127,8 @@ def daemon():
 			job_id, owner, file, nb, job_dir, size = SEND_QUEUE[0]
 			# do not send files that belong to cancelled jobs
 			if not job_id in CANCEL_QUEUE:
+				# make sure that there is enough space on the server
+				check_server_disk_usage()
 				# make sure that a folder does not end with a slash
 				if os.path.isdir(file) and (file.endswith("/") or file.endswith("\\")): file = file[0:-1]
 				# determine the remote folder (either main storage, or job folder)
@@ -127,11 +142,8 @@ def daemon():
 				# cwrsync requires drives to be prepended (Windows only)
 				if os.name == 'nt': file = re.sub(r"^([A-Z]):", r"/cygdrive/\1", file.replace("\\", "/"))
 				# call RSync
-				#logger.debug(f"rsync {RSYNC_OPTIONS} \"{file}\" \"{remote_path}\"")
 				os.system(f"rsync {RSYNC_OPTIONS} \"{file}\" \"{remote_path}\" > {PROGRESS_FILE}")
 				#logger.info(f"RSYNC: Transfer of '{file}' is finished, {len(SEND_QUEUE)} file(s) are left in the queue")
-			#else:
-			#		logger.info(f"Job {job_id} has been canceled")
 			# remove the item from the list
 			SEND_QUEUE.pop(0)
 			# delete the progress file
@@ -144,8 +156,6 @@ def daemon():
 			# wait for 15 seconds
 			time.sleep(REFRESH_RATE)
 
-# TODO return a version number
-#def hello_world(): return "OK"
 @app.route("/")
 def config(): return VERSION
 
@@ -187,7 +197,6 @@ def send_rsync():
 
 @app.route("/list-rsync")
 def list_rsync():
-		#return jsonify(["my-new-fake-maps.txt", "TP4808CMO_Slot2-1_1_4820_ABU.d", "Q_ABU_ValidRaw_ValidArchive.raw", "Q_ABU_ValidRaw_ValidArchive.d", "TP4823CMO_ABU_Slot2-17_1_4835.d"])
 		files = []
 		for job_id, _, file, _, job_dir, _ in SEND_QUEUE:
 			# do not list the fasta files or the files that have been cancelled
@@ -238,17 +247,14 @@ def progress_rsync(owner, job_id):
 	[current_file, current_amount] = read_progress_file()
 	logger.info(f"> Progress of '{current_file}': {current_amount}")
 	# prepare a dict for the results
-	#progress = []
 	progress = {}
 	# for each file, set a size of 0 unless it is the file being transferred (then set the percentage)
 	for file in SEND_QUEUE:
 		id, username, filename, nb, _, size = file
 		if job_id == int(id) and owner == username:
 			if os.path.basename(filename) == current_file:
-				#progress.append({filename: int(current_amount * 100 / size)})
 				progress[filename]= int(current_amount * 100 / size)
 			else:
-				#progress.append({filename: 0})
 				progress[filename]= 0
 	# return the dict with the files that are still in the queue
 	# the files not in that list will be considered as already transferred
