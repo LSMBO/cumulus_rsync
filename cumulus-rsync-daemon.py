@@ -39,6 +39,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 import re
+import requests
 import threading
 import time
 
@@ -92,9 +93,10 @@ if os.name == 'nt':
 #   -l: login
 #   -i: the path to the public key
 #   -o 'StrictHostKeyChecking no': do not ask if the key has to be trusted
+# --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r: make sure that directories have permission 755 and files 644
 # TODO send the file even if it exists on receiver but with a different size
 #RSYNC_OPTIONS = f"-r --ignore-existing --exclude='*-wal' -e 'ssh -l {STORAGE_USER} -p {STORAGE_PORT} -i \"{STORAGE_KEY}\" -o \"StrictHostKeyChecking no\"'"
-RSYNC_OPTIONS = f"-r --ignore-existing --exclude='*-wal' --progress -e 'ssh -l {STORAGE_USER} -i \"{STORAGE_KEY}\" -o \"StrictHostKeyChecking no\"'"
+RSYNC_OPTIONS = f"-r --ignore-existing --exclude='*-wal' --progress -e 'ssh -l {STORAGE_USER} -i \"{STORAGE_KEY}\" -o \"StrictHostKeyChecking no\"' --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r"
 # each time the user wants to send files, the files are put in a queue and a job id is returned; the queue and the id are not stored and will be reseted when the daemon is stopped
 SEND_QUEUE = list()
 # we use another queue to store the ids of the jobs canceled, so we do not have to worry about synchronizing the main queue between threads
@@ -113,6 +115,7 @@ def check_server_disk_usage():
 	response = requests.get(f"http://{STORAGE_HOST}:{STORAGE_PORT}/diskusage")
 	free = response.json()[2]
 	if free < STORAGE_FREE_LIMIT:
+		# TODO this has not been tested
 		while free < STORAGE_FREE_LIMIT:
 			logger.warning(f"Storage free space is below {STORAGE_FREE_LIMIT // 2**30}GB, uploads are paused for now...")
 			time.sleep(STORAGE_FREE_LIMIT_SLEEP)
@@ -122,9 +125,11 @@ def check_server_disk_usage():
 
 def daemon():
 	while True:
+		# logger.debug(f"{len(SEND_QUEUE)} file(s) in the queue...")
 		if len(SEND_QUEUE) > 0:
 			# get the first and oldest entry in the queue
 			job_id, owner, file, nb, job_dir, size = SEND_QUEUE[0]
+			# logger.debug(f"Job {job_id}: file '{file}' of size {size}")
 			# do not send files that belong to cancelled jobs
 			if not job_id in CANCEL_QUEUE:
 				# make sure that there is enough space on the server
@@ -140,10 +145,11 @@ def daemon():
 				CURRENT_JOB = job_id
 				CURRENT_FILE = file
 				# cwrsync requires drives to be prepended (Windows only)
-				if os.name == 'nt': file = re.sub(r"^([A-Z]):", r"/cygdrive/\1", file.replace("\\", "/"))
+				if os.name == 'nt': file = re.sub(r"^([a-zA-Z]):", r"/cygdrive/\1", file.replace("\\", "/"))
 				# call RSync
+				# logger.debug(f"rsync {RSYNC_OPTIONS} \"{file}\" \"{remote_path}\"")
 				os.system(f"rsync {RSYNC_OPTIONS} \"{file}\" \"{remote_path}\" > {PROGRESS_FILE}")
-				#logger.info(f"RSYNC: Transfer of '{file}' is finished, {len(SEND_QUEUE)} file(s) are left in the queue")
+				# logger.info(f"RSYNC: Transfer of '{file}' is finished, {len(SEND_QUEUE)} file(s) are left in the queue")
 			# remove the item from the list
 			SEND_QUEUE.pop(0)
 			# delete the progress file
@@ -182,17 +188,21 @@ def send_rsync():
 		#print(f"Calling /send-rsync from owner '{owner}' with job id {job_id}")
 		logger.info(f"Receiving files to upload for job {job_id}")
 		# for each file, add [job_id, job_owner, file_path] to the queue
-		files = json.loads(settings["files"]) # raw files
+		shared_files = json.loads(settings["files"]) # raw files
 		local_files = json.loads(settings["local_files"]) # fasta files
-		nb = len(files) + len(local_files)
+		nb = len(shared_files) + len(local_files)
 		for file in local_files:
-			logger.info(f"Add '{os.path.basename(file)}' to the queue, it will be sent to {job_dir}")
+			# logger.info(f"Add '{os.path.basename(file)}' to the queue, it will be sent to {job_dir}")
+			logger.info(f"Add '{file}' to the queue, it will be sent to {job_dir}")
 			SEND_QUEUE.append([job_id, owner, file, nb, job_dir, get_size(file)])
-		for file in files:
-			logger.info(f"Add '{os.path.basename(file)}' to the queue, it will be shared for all jobs")
+		for file in shared_files:
+			# logger.info(f"Add '{os.path.basename(file)}' to the queue, it will be shared for all jobs")
+			logger.info(f"Add '{file}' to the queue, it will be shared for all jobs")
 			SEND_QUEUE.append([job_id, owner, file, nb, "", get_size(file)])
 		# send a blank file to the job folder to warn the controller that all the transfers are done for this job
-		SEND_QUEUE.append([job_id, owner, FINAL_FILE, nb, job_dir, get_size(file)])
+		# TODO this file does not seem to be sent
+		# Error is: Sending file '.cumulus.rsync' to '134.158.151.45:/storage/jobs/Job_72_Burel.Alexandre_diann_1.9.1_1734421249' The source and destination cannot both be remote
+		SEND_QUEUE.append([job_id, owner, FINAL_FILE, nb, job_dir, get_size(FINAL_FILE)])
 		return f"{nb} files have been added to the queue"
 
 @app.route("/list-rsync")
@@ -242,24 +252,26 @@ def test():
 
 @app.route("/progress-rsync/<string:owner>/<int:job_id>")
 def progress_rsync(owner, job_id):
-	logger.info(f"Monitoring progress for job {job_id} owned by {owner}")
+	# logger.info(f"Monitoring progress for job {job_id} owned by {owner}")
 	# read the progress file and extract the file being transferred and the amount of bytes transferred
 	[current_file, current_amount] = read_progress_file()
-	logger.info(f"> Progress of '{current_file}': {current_amount}")
+	# logger.info(f"> Progress of '{current_file}': {current_amount}")
 	# prepare a dict for the results
-	progress = {}
+	progress_dict = {}
 	# for each file, set a size of 0 unless it is the file being transferred (then set the percentage)
 	for file in SEND_QUEUE:
-		id, username, filename, nb, _, size = file
+		id, username, filepath, nb, _, size = file
 		if job_id == int(id) and owner == username:
-			if os.path.basename(filename) == current_file:
-				progress[filename]= int(current_amount * 100 / size)
+			filename = os.path.basename(filepath)
+			if size > 0 and os.path.basename(filename) == current_file:
+				progress_dict[filename] = int(current_amount * 100 / size)
+				logger.info(f"Job {job_id}: File '{filename}' is being uploaded, current progress is {progress_dict[filename]}%")
 			else:
-				progress[filename]= 0
+				progress_dict[filename] = 0
 	# return the dict with the files that are still in the queue
 	# the files not in that list will be considered as already transferred
-	logger.info(jsonify(progress))
-	return jsonify(progress)
+	# logger.info(jsonify(progress_dict))
+	return jsonify(progress_dict)
 
 # start the queue once all functions are defined
 threading.Thread(target=daemon, args=(), daemon=True).start()
