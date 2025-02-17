@@ -43,13 +43,25 @@ import requests
 import threading
 import time
 
+IS_DEBUG = False
+if os.getenv("CUMULUS_DEBUG"): IS_DEBUG = True
+
 app = Flask(__name__)
+
+# prepare the logs
+LOGS_DIR = "logs"
+if not os.path.isdir(LOGS_DIR): os.mkdir(LOGS_DIR)
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-				#handlers=[RotatingFileHandler(filename = f"{__name__}.log", maxBytes = 100000, backupCount = 10)],
-				level=logging.DEBUG,
-				format="[%(asctime)s] %(levelname)s [%(name)s.%(funcName)s:%(lineno)d] %(message)s",
-				datefmt='%Y/%m/%d %H:%M:%S')
+log_format = "[%(asctime)s] %(levelname)s [%(name)s.%(funcName)s:%(lineno)d] %(message)s"
+log_date = "%Y/%m/%d %H:%M:%S"
+if IS_DEBUG: logging.basicConfig(level = logging.DEBUG, format = log_format, datefmt = log_date)
+else:
+	logging.basicConfig(
+		handlers = [RotatingFileHandler(filename = f"{LOGS_DIR}/cumulus-rsync.log", maxBytes = 10000000, backupCount = 10)],
+		level = logging.INFO,
+		format = log_format,
+		datefmt = log_date
+	)
 
 # default config
 STORAGE_HOST = "localhost" # the host where the cumulus server is
@@ -95,7 +107,6 @@ if os.name == 'nt':
 #   -o 'StrictHostKeyChecking no': do not ask if the key has to be trusted
 # --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r: make sure that directories have permission 755 and files 644
 # TODO send the file even if it exists on receiver but with a different size
-#RSYNC_OPTIONS = f"-r --ignore-existing --exclude='*-wal' -e 'ssh -l {STORAGE_USER} -p {STORAGE_PORT} -i \"{STORAGE_KEY}\" -o \"StrictHostKeyChecking no\"'"
 RSYNC_OPTIONS = f"-r --ignore-existing --exclude='*-wal' --progress -e 'ssh -l {STORAGE_USER} -i \"{STORAGE_KEY}\" -o \"StrictHostKeyChecking no\"' --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r"
 # each time the user wants to send files, the files are put in a queue and a job id is returned; the queue and the id are not stored and will be reseted when the daemon is stopped
 SEND_QUEUE = list()
@@ -108,20 +119,29 @@ CURRENT_FILE = ""
 STORAGE_FREE_LIMIT = 10737418240 # below this amount of free space, there will be no upload (10GB by default)
 STORAGE_FREE_LIMIT_HR = STORAGE_FREE_LIMIT // 2**30
 STORAGE_FREE_LIMIT_SLEEP = 900 # wait 15 minutes between each check
+STORAGE_USAGE_LAST_CALL = 0 # timestamp in seconds of the last call to diskusage
+STORAGE_USAGE_WAITING_TIME = 60 # 1 minute between two calls to diskusage, should be small enough to avoid that STORAGE_FREE_LIMIT is reached
 
 logger.info(f"Cumulus RSync daemon is running, data will be sent to {STORAGE_USER}@{STORAGE_HOST}:{STORAGE_PATH}")
 
 def check_server_disk_usage():
-	response = requests.get(f"http://{STORAGE_HOST}:{STORAGE_PORT}/diskusage")
-	free = response.json()[2]
-	if free < STORAGE_FREE_LIMIT:
-		# TODO this has not been tested
-		while free < STORAGE_FREE_LIMIT:
-			logger.warning(f"Storage free space is below {STORAGE_FREE_LIMIT // 2**30}GB, uploads are paused for now...")
-			time.sleep(STORAGE_FREE_LIMIT_SLEEP)
-			response = requests.get(f"http://{STORAGE_HOST}:{STORAGE_PORT}/diskusage")
-			free = response.json()[2]
-		logger.info("Uploads will restart now")
+	global STORAGE_USAGE_LAST_CALL
+	# do not check the server disk usage if it has been checked less than a minute ago
+	# it can happen if files are already on the server
+	current_timestamp = time.time()
+	if STORAGE_USAGE_LAST_CALL == 0 or current_timestamp - STORAGE_USAGE_LAST_CALL > STORAGE_USAGE_WAITING_TIME:
+		STORAGE_USAGE_LAST_CALL = current_timestamp
+		# call the server
+		response = requests.get(f"http://{STORAGE_HOST}:{STORAGE_PORT}/diskusage")
+		free = response.json()[2]
+		if free < STORAGE_FREE_LIMIT:
+			# TODO this has not been tested
+			while free < STORAGE_FREE_LIMIT:
+				logger.warning(f"Storage free space is below {STORAGE_FREE_LIMIT // 2**30}GB, uploads are paused for now...")
+				time.sleep(STORAGE_FREE_LIMIT_SLEEP)
+				response = requests.get(f"http://{STORAGE_HOST}:{STORAGE_PORT}/diskusage")
+				free = response.json()[2]
+			logger.info("Uploads will restart now")
 
 def daemon():
 	while True:
@@ -200,8 +220,6 @@ def send_rsync():
 			logger.info(f"Add '{file}' to the queue, it will be shared for all jobs")
 			SEND_QUEUE.append([job_id, owner, file, nb, "", get_size(file)])
 		# send a blank file to the job folder to warn the controller that all the transfers are done for this job
-		# TODO this file does not seem to be sent
-		# Error is: Sending file '.cumulus.rsync' to '134.158.151.45:/storage/jobs/Job_72_Burel.Alexandre_diann_1.9.1_1734421249' The source and destination cannot both be remote
 		SEND_QUEUE.append([job_id, owner, FINAL_FILE, nb, job_dir, get_size(FINAL_FILE)])
 		return f"{nb} files have been added to the queue"
 
