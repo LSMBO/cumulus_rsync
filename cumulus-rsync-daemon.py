@@ -1,4 +1,4 @@
-# Copyright or © or Copr. Alexandre BUREL for LSMBO / IPHC UMR7178 / CNRS (2024)
+# Copyright or © or Copr. Alexandre BUREL for LSMBO / IPHC UMR7178 / CNRS (2025)
 # 
 # [a.burel@unistra.fr]
 # 
@@ -261,13 +261,12 @@ def read_progress_file():
 	else:
 		return ["", 0]
 
-@app.route("/test")
-def test():
-	[current_file, current_amount] = read_progress_file()
-	logger.info(f"> Progress of '{current_file}': {current_amount}%")
-	return f"'{current_file}': {current_amount*1}%"
+# @app.route("/test")
+# def test():
+	# [current_file, current_amount] = read_progress_file()
+	# logger.info(f"> Progress of '{current_file}': {current_amount}%")
+	# return f"'{current_file}': {current_amount*1}%"
 	
-
 @app.route("/progress-rsync/<string:owner>/<int:job_id>")
 def progress_rsync(owner, job_id):
 	# logger.info(f"Monitoring progress for job {job_id} owned by {owner}")
