@@ -1,0 +1,165 @@
+sending incremental file list
+TP4806_Slot2-1_1_4818.d/
+TP4806_Slot2-1_1_4818.d/SampleInfo.xml
+
+          4.722 100%    0,00kB/s    0:00:00  
+          4.722 100%    0,00kB/s    0:00:00 (xfr#1, to-chk=41/43)
+TP4806_Slot2-1_1_4818.d/analysis.tdf
+
+         32.768   0%   15,62MB/s    0:00:01  
+     21.463.040  74%   19,11MB/s    0:00:00  
+     28.663.808 100%   17,50MB/s    0:00:01 (xfr#2, to-chk=40/43)
+TP4806_Slot2-1_1_4818.d/analysis.tdf_bin
+
+         32.768   0%   64,91kB/s    0:16:38  
+      5.898.240   9%    5,08MB/s    0:00:11  
+     19.005.440  29%    8,15MB/s    0:00:05  
+     32.079.872  49%    9,18MB/s    0:00:03  
+     45.187.072  69%    9,70MB/s    0:00:01  
+     58.294.272  89%   11,24MB/s    0:00:00  
+     64.856.064 100%   10,23MB/s    0:00:06 (xfr#3, to-chk=39/43)
+TP4806_Slot2-1_1_4818.d/chromatography-data-pre.sqlite
+
+         32.768  21%   64,39kB/s    0:00:01  
+        155.648 100%  305,84kB/s    0:00:00 (xfr#4, to-chk=38/43)
+TP4806_Slot2-1_1_4818.d/chromatography-data.sqlite
+
+         32.768   5%   63,75kB/s    0:00:08  
+        566.272 100%    1,07MB/s    0:00:00 (xfr#5, to-chk=37/43)
+TP4806_Slot2-1_1_4818.d/chromatography-data.sqlite-journal
+
+              0 100%    0,00kB/s    0:00:00 (xfr#6, to-chk=36/43)
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-28_Waiting-for-Oven-Temperature,-open-context-menu-to-stop-waiting/
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-28_Waiting-for-Oven-Temperature,-open-context-menu-to-stop-waiting/column_setpoint.txt
+
+            467 100%    0,90kB/s    0:00:00  
+            467 100%    0,90kB/s    0:00:00 (xfr#7, to-chk=32/43)
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-28_Waiting-for-Oven-Temperature,-open-context-menu-to-stop-waiting/column_temperature.txt
+
+            470 100%    0,90kB/s    0:00:00  
+            470 100%    0,90kB/s    0:00:00 (xfr#8, to-chk=31/43)
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-28_Waiting-for-Oven-Temperature,-open-context-menu-to-stop-waiting/execution-log.txt
+
+          1.835 100%    3,49kB/s    0:00:00  
+          1.835 100%    3,49kB/s    0:00:00 (xfr#9, to-chk=30/43)
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-28_Waiting-for-Oven-Temperature,-open-context-menu-to-stop-waiting/flowsensor-a_flow.txt
+
+            154 100%    0,29kB/s    0:00:00  
+            154 100%    0,29kB/s    0:00:00 (xfr#10, to-chk=29/43)
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-28_Waiting-for-Oven-Temperature,-open-context-menu-to-stop-waiting/flowsensor-b_flow.txt
+
+            254 100%    0,48kB/s    0:00:00  
+            254 100%    0,48kB/s    0:00:00 (xfr#11, to-chk=28/43)
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-28_Waiting-for-Oven-Temperature,-open-context-menu-to-stop-waiting/pump-a_pressure.txt
+
+             68 100%    0,13kB/s    0:00:00  
+             68 100%    0,13kB/s    0:00:00 (xfr#12, to-chk=27/43)
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-28_Waiting-for-Oven-Temperature,-open-context-menu-to-stop-waiting/pump-a_speed.txt
+
+             69 100%    0,13kB/s    0:00:00  
+             69 100%    0,13kB/s    0:00:00 (xfr#13, to-chk=26/43)
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-28_Waiting-for-Oven-Temperature,-open-context-menu-to-stop-waiting/pump-a_temperature.txt
+
+             73 100%    0,14kB/s    0:00:00  
+             73 100%    0,14kB/s    0:00:00 (xfr#14, to-chk=25/43)
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-28_Waiting-for-Oven-Temperature,-open-context-menu-to-stop-waiting/pump-a_volume.txt
+
+             66 100%    0,12kB/s    0:00:00  
+             66 100%    0,12kB/s    0:00:00 (xfr#15, to-chk=24/43)
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-28_Waiting-for-Oven-Temperature,-open-context-menu-to-stop-waiting/pump-b_pressure.txt
+
+             88 100%    0,16kB/s    0:00:00  
+             88 100%    0,16kB/s    0:00:00 (xfr#16, to-chk=23/43)
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-28_Waiting-for-Oven-Temperature,-open-context-menu-to-stop-waiting/pump-b_speed.txt
+
+             69 100%    0,13kB/s    0:00:00  
+             69 100%    0,13kB/s    0:00:00 (xfr#17, to-chk=22/43)
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-28_Waiting-for-Oven-Temperature,-open-context-menu-to-stop-waiting/pump-b_temperature.txt
+
+             73 100%    0,13kB/s    0:00:00  
+             73 100%    0,13kB/s    0:00:00 (xfr#18, to-chk=21/43)
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-28_Waiting-for-Oven-Temperature,-open-context-menu-to-stop-waiting/pump-b_volume.txt
+
+             64 100%    0,12kB/s    0:00:00  
+             64 100%    0,12kB/s    0:00:00 (xfr#19, to-chk=20/43)
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-28_Waiting-for-Oven-Temperature,-open-context-menu-to-stop-waiting/sample-tray_temperature.txt
+
+             76 100%    0,14kB/s    0:00:00  
+             76 100%    0,14kB/s    0:00:00 (xfr#20, to-chk=19/43)
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-28_Waiting-for-Oven-Temperature,-open-context-menu-to-stop-waiting/setflow-a_setflow.txt
+
+             74 100%    0,13kB/s    0:00:00  
+             74 100%    0,13kB/s    0:00:00 (xfr#21, to-chk=18/43)
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-28_Waiting-for-Oven-Temperature,-open-context-menu-to-stop-waiting/setflow-b_setflow.txt
+
+             74 100%    0,13kB/s    0:00:00  
+             74 100%    0,13kB/s    0:00:00 (xfr#22, to-chk=17/43)
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-28_Waiting-for-Oven-Temperature,-open-context-menu-to-stop-waiting/solvent-a_composition.txt
+
+             72 100%    0,13kB/s    0:00:00  
+             72 100%    0,13kB/s    0:00:00 (xfr#23, to-chk=16/43)
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-28_Waiting-for-Oven-Temperature,-open-context-menu-to-stop-waiting/solvent-b_composition.txt
+
+             72 100%    0,13kB/s    0:00:00  
+             72 100%    0,13kB/s    0:00:00 (xfr#24, to-chk=15/43)
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-28_Waiting-for-Oven-Temperature,-open-context-menu-to-stop-waiting/system-info.txt
+
+          1.525 100%    2,66kB/s    0:00:00  
+          1.525 100%    2,66kB/s    0:00:00 (xfr#25, to-chk=14/43)
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-28_Waiting-for-Oven-Temperature,-open-context-menu-to-stop-waiting/valve-a_angle.txt
+
+            492 100%    0,85kB/s    0:00:00  
+            492 100%    0,85kB/s    0:00:00 (xfr#26, to-chk=13/43)
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-28_Waiting-for-Oven-Temperature,-open-context-menu-to-stop-waiting/valve-b_angle.txt
+
+            492 100%    0,85kB/s    0:00:00  
+            492 100%    0,85kB/s    0:00:00 (xfr#27, to-chk=12/43)
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-28_Waiting-for-Oven-Temperature,-open-context-menu-to-stop-waiting/valve-i_angle.txt
+
+             72 100%    0,12kB/s    0:00:00  
+             72 100%    0,12kB/s    0:00:00 (xfr#28, to-chk=11/43)
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-28_Waiting-for-Oven-Temperature,-open-context-menu-to-stop-waiting/valve-t_angle.txt
+
+             70 100%    0,12kB/s    0:00:00  
+             70 100%    0,12kB/s    0:00:00 (xfr#29, to-chk=10/43)
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-31_Two-column-separation/
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-31_Two-column-separation/execution-log.txt
+
+         32.768  65%   55,56kB/s    0:00:00  
+         50.384 100%   85,42kB/s    0:00:00 (xfr#30, to-chk=9/43)
+TP4806_Slot2-1_1_4818.d/2021-02-21_16-07-31_Two-column-separation/system-info.txt
+
+          1.525 100%    2,58kB/s    0:00:00  
+          1.525 100%    2,58kB/s    0:00:00 (xfr#31, to-chk=8/43)
+TP4806_Slot2-1_1_4818.d/4818.m/
+TP4806_Slot2-1_1_4818.d/4818.m/Maldi.method
+
+          1.346 100%    2,25kB/s    0:00:00  
+          1.346 100%    2,25kB/s    0:00:00 (xfr#32, to-chk=7/43)
+TP4806_Slot2-1_1_4818.d/4818.m/desktop.ini
+
+            156 100%    0,26kB/s    0:00:00  
+            156 100%    0,26kB/s    0:00:00 (xfr#33, to-chk=6/43)
+TP4806_Slot2-1_1_4818.d/4818.m/diaSettings.diasqlite
+
+         24.576 100%   40,82kB/s    0:00:00  
+         24.576 100%   40,82kB/s    0:00:00 (xfr#34, to-chk=5/43)
+TP4806_Slot2-1_1_4818.d/4818.m/hystar.method
+
+         16.346 100%   26,83kB/s    0:00:00  
+         16.346 100%   26,83kB/s    0:00:00 (xfr#35, to-chk=4/43)
+TP4806_Slot2-1_1_4818.d/4818.m/lock.file
+
+              0 100%    0,00kB/s    0:00:00 (xfr#36, to-chk=3/43)
+TP4806_Slot2-1_1_4818.d/4818.m/microTOFQImpacTemAcquisition.method
+
+         32.768  24%   52,72kB/s    0:00:01  
+        133.576 100%  214,55kB/s    0:00:00 (xfr#37, to-chk=2/43)
+TP4806_Slot2-1_1_4818.d/4818.m/prmSettings.prmsqlite
+
+         32.768  88%   52,37kB/s    0:00:00  
+         36.864 100%   58,92kB/s    0:00:00 (xfr#38, to-chk=1/43)
+TP4806_Slot2-1_1_4818.d/4818.m/submethods.xml
+
+            736 100%    1,17kB/s    0:00:00  
+            736 100%    1,17kB/s    0:00:00 (xfr#39, to-chk=0/43)
