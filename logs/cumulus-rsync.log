@@ -1,0 +1,120 @@
+[2025/02/25 12:01:33] INFO [cumulus_rsync.daemon:49] Cumulus RSync daemon is running, data will be sent to ubuntu@134.158.151.45:/storage
+[2025/02/25 12:01:33] INFO [werkzeug._log:97] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8800
+ * Running on http://10.0.0.203:8800
+[2025/02/25 12:01:33] INFO [werkzeug._log:97] [33mPress CTRL+C to quit[0m
+[2025/02/25 12:01:33] INFO [werkzeug._log:97]  * Restarting with watchdog (windowsapi)
+[2025/02/25 12:01:33] INFO [cumulus_rsync.daemon:49] Cumulus RSync daemon is running, data will be sent to ubuntu@134.158.151.45:/storage
+[2025/02/25 12:01:33] WARNING [werkzeug._log:97]  * Debugger is active!
+[2025/02/25 12:01:34] INFO [werkzeug._log:97]  * Debugger PIN: 345-556-549
+[2025/02/25 12:02:08] INFO [cumulus_rsync.daemon:49] Cumulus RSync daemon is running, data will be sent to ubuntu@134.158.151.45:/storage
+[2025/02/25 12:02:08] INFO [werkzeug._log:97] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8800
+ * Running on http://10.0.0.203:8800
+[2025/02/25 12:02:08] INFO [werkzeug._log:97] [33mPress CTRL+C to quit[0m
+[2025/02/25 12:02:08] INFO [werkzeug._log:97]  * Restarting with watchdog (windowsapi)
+[2025/02/25 12:02:09] INFO [cumulus_rsync.daemon:49] Cumulus RSync daemon is running, data will be sent to ubuntu@134.158.151.45:/storage
+[2025/02/25 12:02:09] WARNING [werkzeug._log:97]  * Debugger is active!
+[2025/02/25 12:02:09] INFO [werkzeug._log:97]  * Debugger PIN: 345-556-549
+[2025/02/25 13:12:48] INFO [cumulus_rsync.daemon:49] Cumulus RSync daemon is running, data will be sent to ubuntu@134.158.151.45:/storage
+[2025/02/25 13:12:48] INFO [werkzeug._log:97] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8800
+ * Running on http://10.0.0.203:8800
+[2025/02/25 13:12:48] INFO [werkzeug._log:97] [33mPress CTRL+C to quit[0m
+[2025/02/25 13:12:48] INFO [werkzeug._log:97]  * Restarting with watchdog (windowsapi)
+[2025/02/25 13:12:49] INFO [cumulus_rsync.daemon:49] Cumulus RSync daemon is running, data will be sent to ubuntu@134.158.151.45:/storage
+[2025/02/25 13:12:49] WARNING [werkzeug._log:97]  * Debugger is active!
+[2025/02/25 13:12:49] INFO [werkzeug._log:97]  * Debugger PIN: 345-556-549
+[2025/02/25 13:12:56] INFO [cumulus_rsync.daemon:49] Cumulus RSync daemon is running, data will be sent to ubuntu@134.158.151.45:/storage
+[2025/02/25 13:12:56] INFO [werkzeug._log:97] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8800
+ * Running on http://10.0.0.203:8800
+[2025/02/25 13:12:56] INFO [werkzeug._log:97] [33mPress CTRL+C to quit[0m
+[2025/02/25 13:19:07] INFO [cumulus_rsync.daemon:49] Cumulus RSync daemon is running, data will be sent to ubuntu@134.158.151.45:/storage
+[2025/02/25 13:19:07] INFO [werkzeug._log:97] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8800
+ * Running on http://10.0.0.203:8800
+[2025/02/25 13:19:07] INFO [werkzeug._log:97] [33mPress CTRL+C to quit[0m
+[2025/02/25 13:20:26] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 13:20:26] "GET / HTTP/1.1" 200 -
+[2025/02/25 13:21:15] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 13:21:15] "GET / HTTP/1.1" 200 -
+[2025/02/25 13:21:19] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 13:21:19] "GET / HTTP/1.1" 200 -
+[2025/02/25 13:21:33] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 13:21:33] "GET / HTTP/1.1" 200 -
+[2025/02/25 13:21:49] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 13:21:49] "GET / HTTP/1.1" 200 -
+[2025/02/25 13:22:19] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 13:22:19] "GET / HTTP/1.1" 200 -
+[2025/02/25 13:22:39] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 13:22:39] "GET / HTTP/1.1" 200 -
+[2025/02/25 13:22:49] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 13:22:49] "GET / HTTP/1.1" 200 -
+[2025/02/25 13:22:50] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 13:22:50] "GET / HTTP/1.1" 200 -
+[2025/02/25 13:23:01] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 13:23:01] "GET / HTTP/1.1" 200 -
+[2025/02/25 13:23:19] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 13:23:19] "GET / HTTP/1.1" 200 -
+[2025/02/25 13:23:39] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 13:23:39] "GET / HTTP/1.1" 200 -
+[2025/02/25 13:23:46] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 13:23:46] "GET /list-rsync HTTP/1.1" 200 -
+[2025/02/25 13:23:59] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 13:23:59] "GET / HTTP/1.1" 200 -
+[2025/02/25 13:24:19] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 13:24:19] "GET / HTTP/1.1" 200 -
+[2025/02/25 13:30:39] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 13:30:39] "GET / HTTP/1.1" 200 -
+[2025/02/25 13:30:41] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 13:30:41] "GET / HTTP/1.1" 200 -
+[2025/02/25 13:33:03] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 13:33:03] "GET / HTTP/1.1" 200 -
+[2025/02/25 13:33:05] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 13:33:05] "GET / HTTP/1.1" 200 -
+[2025/02/25 14:14:52] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:14:52] "GET / HTTP/1.1" 200 -
+[2025/02/25 14:14:54] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:14:54] "GET / HTTP/1.1" 200 -
+[2025/02/25 14:16:16] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:16:16] "GET / HTTP/1.1" 200 -
+[2025/02/25 14:16:18] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:16:18] "GET / HTTP/1.1" 200 -
+[2025/02/25 14:18:12] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:18:12] "GET / HTTP/1.1" 200 -
+[2025/02/25 14:18:14] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:18:14] "GET / HTTP/1.1" 200 -
+[2025/02/25 14:19:27] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:19:27] "GET / HTTP/1.1" 200 -
+[2025/02/25 14:19:29] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:19:29] "GET / HTTP/1.1" 200 -
+[2025/02/25 14:27:07] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:27:07] "GET / HTTP/1.1" 200 -
+[2025/02/25 14:27:10] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:27:10] "GET / HTTP/1.1" 200 -
+[2025/02/25 14:27:30] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:27:30] "GET / HTTP/1.1" 200 -
+[2025/02/25 14:27:49] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:27:49] "GET / HTTP/1.1" 200 -
+[2025/02/25 14:28:30] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:28:30] "GET / HTTP/1.1" 200 -
+[2025/02/25 14:28:59] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:28:59] "GET / HTTP/1.1" 200 -
+[2025/02/25 14:29:20] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:29:20] "GET / HTTP/1.1" 200 -
+[2025/02/25 14:32:46] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:32:46] "GET / HTTP/1.1" 200 -
+[2025/02/25 14:32:48] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:32:48] "GET / HTTP/1.1" 200 -
+[2025/02/25 14:33:02] ERROR [cumulus_rsync.log_exception:838] Exception on /send-rsync [POST]
+Traceback (most recent call last):
+  File "D:\Projets\Cumulus\cumulus_rsync\.venv\Lib\site-packages\flask\app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Projets\Cumulus\cumulus_rsync\.venv\Lib\site-packages\flask\app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Projets\Cumulus\cumulus_rsync\.venv\Lib\site-packages\flask\app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Projets\Cumulus\cumulus_rsync\.venv\Lib\site-packages\flask\app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Projets\Cumulus\cumulus_rsync\cumulus_rsync\__init__.py", line 90, in send_rsync
+    nb = utils.add_to_queue(job_id, owner, job_dir, owner, shared_files, local_files)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: add_to_queue() takes 5 positional arguments but 6 were given
+[2025/02/25 14:33:02] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:33:02] "[35m[1mPOST /send-rsync HTTP/1.1[0m" 500 -
+[2025/02/25 14:33:02] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:33:02] "GET / HTTP/1.1" 200 -
+[2025/02/25 14:33:03] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:33:03] "GET /progress-rsync/Burel.Alexandre/130 HTTP/1.1" 200 -
+[2025/02/25 14:33:08] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:33:08] "GET /progress-rsync/Burel.Alexandre/130 HTTP/1.1" 200 -
+[2025/02/25 14:33:18] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:33:18] "GET /progress-rsync/Burel.Alexandre/130 HTTP/1.1" 200 -
+[2025/02/25 14:33:28] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:33:28] "GET /progress-rsync/Burel.Alexandre/130 HTTP/1.1" 200 -
+[2025/02/25 14:33:38] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:33:38] "GET /progress-rsync/Burel.Alexandre/130 HTTP/1.1" 200 -
+[2025/02/25 14:33:48] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:33:48] "GET /progress-rsync/Burel.Alexandre/130 HTTP/1.1" 200 -
+[2025/02/25 14:34:18] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:34:18] "GET / HTTP/1.1" 200 -
+[2025/02/25 14:34:19] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:34:19] "GET /progress-rsync/Burel.Alexandre/130 HTTP/1.1" 200 -
+[2025/02/25 14:34:49] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:34:49] "GET / HTTP/1.1" 200 -
+[2025/02/25 14:34:49] INFO [werkzeug._log:97] 127.0.0.1 - - [25/Feb/2025 14:34:49] "GET /progress-rsync/Burel.Alexandre/130 HTTP/1.1" 200 -
+[2025/02/25 14:36:38] INFO [cumulus_rsync.daemon:49] Cumulus RSync daemon is running, data will be sent to ubuntu@134.158.151.45:/storage
+[2025/02/25 14:36:38] INFO [werkzeug._log:97] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8800
+ * Running on http://10.0.0.203:8800
+[2025/02/25 14:36:38] INFO [werkzeug._log:97] [33mPress CTRL+C to quit[0m
+[2025/02/25 14:37:30] INFO [cumulus_rsync.daemon:49] Cumulus RSync daemon is running, data will be sent to ubuntu@134.158.151.45:/storage
+[2025/02/25 14:37:30] INFO [werkzeug._log:97] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8800
+ * Running on http://10.0.0.203:8800
+[2025/02/25 14:37:30] INFO [werkzeug._log:97] [33mPress CTRL+C to quit[0m

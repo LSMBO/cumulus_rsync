@@ -35,15 +35,17 @@ import os
 import re
 import shutil
 
+utils.reset_configuration()
+
 def test_initialization():
     assert utils.STORAGE_HOST == "localhost"
-    utils.initialize("test/cumulus_rsync.conf")
+    utils.initialize("cumulus_rsync/test/cumulus_rsync.conf")
     assert utils.STORAGE_HOST == "127.0.0.1"
     assert re.search("path.to.rsync.bin", utils.RSYNC_BIN_PATH) != None
 
 def test_get_size():
     # test a file
-    file_size = utils.get_size("test/cumulus_rsync.conf")
+    file_size = utils.get_size("cumulus_rsync/test/cumulus_rsync.conf")
     assert file_size > 200
     # test a folder
     folder_size = utils.get_size(".")
@@ -79,7 +81,7 @@ def test_is_enough_free_space_on_server():
 
 def test_read_progress_file():
     # make a copy of the sample file
-    shutil.copyfile("test/.cumulus.progress.test", utils.PROGRESS_FILE)
+    shutil.copyfile("cumulus_rsync/test/.cumulus.progress.test", utils.PROGRESS_FILE)
     # read the file
     [file, progress] = utils.read_progress_file()
     # test the output
@@ -99,7 +101,7 @@ def test_extract_from_settings():
     assert len(local_files) == 1
 
 def test_add_to_queue():
-    nb = utils.add_to_queue(1, "Job_1", "test.user", ["test/File1.raw","test/File2.raw","test/File3.raw"], ["test/File.fasta"])
+    nb = utils.add_to_queue(1, "Job_1", "test.user", ["cumulus_rsync/test/File1.raw","cumulus_rsync/test/File2.raw","cumulus_rsync/test/File3.raw"], ["cumulus_rsync/test/File.fasta"])
     assert nb == 4
     assert len(utils.SEND_QUEUE) == 5
 
@@ -112,7 +114,7 @@ def test_get_number_of_cancelled_file_transfers():
 
 def test_get_progress_for_job():
     # add a fake job
-    utils.SEND_QUEUE.append([2, "test.user", "test/TP4806_Slot2-1_1_4818.d", 16, "Job_2", 94249694 * 1.25])
+    utils.SEND_QUEUE.append([2, "test.user", "cumulus_rsync/test/TP4806_Slot2-1_1_4818.d", 16, "Job_2", 94249694 * 1.25])
     dict = utils.get_progress_for_job(2, "test.user")
     assert dict["TP4806_Slot2-1_1_4818.d"] == 80
 

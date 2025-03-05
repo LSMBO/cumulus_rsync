@@ -1,0 +1,15 @@
+[project]
+name = "cumulus_rsync"
+version = "0.6.0"
+authors = [ { name = "Alexandre Burel", email="alexandre.burel@unistra.fr" } ]
+description = "Cumulus Rsync is RSync client for Cumulus"
+readme = "cumulus_rsync/README.md"
+dependencies = [
+    "flask",
+    "requests",
+    "pytest",
+]
+
+[build-system]
+requires = ["flit_core<4"]
+build-backend = "flit_core.buildapi"

@@ -32,7 +32,9 @@
 
 import json
 import logging
+from logging.handlers import RotatingFileHandler
 import os
+import re
 import requests
 import time
 
@@ -45,17 +47,42 @@ STORAGE_PORT = 8800 # do not use a port already used on the controller (in this 
 STORAGE_USER = "me" # the remote user name
 STORAGE_KEY = os.path.abspath("cumulus.pem") # the public key to connect to the server, it has to be an absolute path
 REFRESH_RATE = 15 # the number of seconds before the daemon wakes up again and checks if there is something in the queue
-FINAL_FILE = os.path.abspath(".cumulus.rsync") # a blank file to transfer at the end of each job, to tell the controller that all the files have been transferred
+FINAL_FILE = ".cumulus.rsync" # a blank file to transfer at the end of each job, to tell the controller that all the files have been transferred
 PROGRESS_FILE = ".cumulus.progress"
 VERSION = ""
 RSYNC_BIN_PATH = "" # the path to the rsync binary
-PROGRESS_FILE = ".cumulus.progress"
-
+# prepare the logs
+LOGS_DIR = "logs"
+if not os.path.isdir(LOGS_DIR): os.mkdir(LOGS_DIR)
 
 ### GENERIC FUNCTIONS ###
 
+def reset_configuration():
+    global STORAGE_HOST, STORAGE_PATH, STORAGE_PORT, STORAGE_USER, STORAGE_KEY, REFRESH_RATE, FINAL_FILE, PROGRESS_FILE, RSYNC_BIN_PATH, VERSION
+    STORAGE_HOST = "localhost" # the host where the cumulus server is
+    STORAGE_PATH = "/storage" # the remote path where data will be sent
+    STORAGE_PORT = 8800 # do not use a port already used on the controller (in this case by flask)
+    STORAGE_USER = "me" # the remote user name
+    STORAGE_KEY = os.path.abspath("cumulus.pem") # the public key to connect to the server, it has to be an absolute path
+    REFRESH_RATE = 15 # the number of seconds before the daemon wakes up again and checks if there is something in the queue
+    FINAL_FILE = ".cumulus.rsync" # a blank file to transfer at the end of each job, to tell the controller that all the files have been transferred
+    PROGRESS_FILE = ".cumulus.progress"
+    VERSION = ""
+    RSYNC_BIN_PATH = "" # the path to the rsync binary
+
 def initialize(config_file):
     global STORAGE_HOST, STORAGE_PATH, STORAGE_PORT, STORAGE_USER, STORAGE_KEY, REFRESH_RATE, FINAL_FILE, PROGRESS_FILE, RSYNC_BIN_PATH, VERSION
+    # configure the logs
+    log_format = "[%(asctime)s] %(levelname)s [%(name)s.%(funcName)s:%(lineno)d] %(message)s"
+    log_date = "%Y/%m/%d %H:%M:%S"
+    if os.getenv("CUMULUS_DEBUG"): logging.basicConfig(level = logging.DEBUG, format = log_format, datefmt = log_date)
+    else:
+        logging.basicConfig(
+            handlers = [RotatingFileHandler(filename = f"{LOGS_DIR}/cumulus-rsync.log", maxBytes = 10000000, backupCount = 10)],
+            level = logging.INFO,
+            format = log_format,
+            datefmt = log_date
+        )
     # read the config file
     f = open(config_file, "r")
     for line in f.read().splitlines():
@@ -66,7 +93,7 @@ def initialize(config_file):
         elif key == "storage.user": STORAGE_USER = value
         elif key == "storage.public_key": STORAGE_KEY = os.path.abspath(value)
         elif key == "refresh.rate": REFRESH_RATE = int(value)
-        elif key == "final.file": FINAL_FILE = os.path.abspath(value)
+        elif key == "final.file": FINAL_FILE = value
         elif key == "progress.file": PROGRESS_FILE = os.path.abspath(value)
         elif key == "rsync.bin.path": RSYNC_BIN_PATH = os.path.abspath(value)
         elif key == "version": VERSION = value
@@ -110,8 +137,10 @@ def get_rsync_command(file, job_dir):
     # determine the remote folder (either main storage, or job folder)
     remote_path = f"{STORAGE_HOST}:{STORAGE_PATH}/jobs/{job_dir}" if job_dir != "" else f"{STORAGE_HOST}:{STORAGE_PATH}/data"
     # log the action
-    if os.path.isdir(file): logger.info(f"Sending directory '{os.path.basename(file)}' to '{remote_path}'")
-    else: logger.info(f"Sending file '{os.path.basename(file)}' to '{remote_path}'")
+    if os.path.isdir(file): logger.debug(f"Sending directory '{os.path.basename(file)}' to '{remote_path}'")
+    else: logger.debug(f"Sending file '{os.path.basename(file)}' to '{remote_path}'")
+    # cwrsync requires drives to be prepended (Windows only)
+    if os.name == 'nt': file = re.sub(r"^([a-zA-Z]):", r"/cygdrive/\1", file.replace("\\", "/"))
     # return the command
     return f"rsync {options} \"{file}\" \"{remote_path}\" > {PROGRESS_FILE}"
 
@@ -123,7 +152,7 @@ STORAGE_USAGE_WAITING_TIME = 60 # 1 minute between two calls to diskusage, shoul
 
 def get_server_free_space():
     response = requests.get(f"http://{STORAGE_HOST}:{STORAGE_PORT}/diskusage")
-    return response[2]
+    return response.json()[2]
 
 def is_enough_free_space_on_server(fake_free_space_fot_test = None):
     global STORAGE_USAGE_LAST_CALL
@@ -251,14 +280,15 @@ def add_to_queue(job_id, job_dir, owner, shared_files, local_files):
     nb = len(shared_files) + len(local_files)
     for file in local_files:
         if os.path.isfile(file) or os.path.isdir(file):
-            logger.info(f"Add '{file}' to the queue, it will be sent to {job_dir}")
+            logger.debug(f"Add '{file}' to the queue, it will be sent to {job_dir}")
             SEND_QUEUE.append([job_id, owner, file, nb, job_dir, get_size(file)])
     for file in shared_files:
         if os.path.isfile(file) or os.path.isdir(file):
-            logger.info(f"Add '{file}' to the queue, it will be shared for all jobs")
+            logger.debug(f"Add '{file}' to the queue, it will be shared for all jobs")
             SEND_QUEUE.append([job_id, owner, file, nb, "", get_size(file)])
     # send a blank file to the job folder to warn the controller that all the transfers are done for this job
     SEND_QUEUE.append([job_id, owner, FINAL_FILE, nb, job_dir, get_size(FINAL_FILE)])
+    logger.info(f"Job {job_id}: {nb} files have been added to the queue")
     return nb
 
 def list_shared_files_in_queue():
