@@ -75,8 +75,9 @@ def test_remove_entry_from_queue():
     # remove the first job
     db.remove_entry_from_queue(id)
     # the id from the next first job would be a increment of the last id
-    next_id, _, _, _ = db.get_first_job_in_queue()
+    next_id, _, _, job_dir = db.get_first_job_in_queue()
     assert next_id == id + 1
+    assert job_dir == ""
     # two jobs were added, each with 3 shared files, 1 local file, and 1 final file
     # one file was removed
     assert db.count_entries_in_queue() == 9
