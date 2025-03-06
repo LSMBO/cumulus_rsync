@@ -8,6 +8,7 @@ dependencies = [
     "flask",
     "requests",
     "pytest",
+    "waitress"
 ]
 
 [build-system]
