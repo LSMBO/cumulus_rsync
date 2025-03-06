@@ -49,6 +49,7 @@ STORAGE_KEY = os.path.abspath("cumulus.pem") # the public key to connect to the 
 REFRESH_RATE = 15 # the number of seconds before the daemon wakes up again and checks if there is something in the queue
 FINAL_FILE = ".cumulus.rsync" # a blank file to transfer at the end of each job, to tell the controller that all the files have been transferred
 PROGRESS_FILE = ".cumulus.progress"
+QUEUE_FILE = "cumulus_rsync_queue.db"
 VERSION = ""
 RSYNC_BIN_PATH = "" # the path to the rsync binary
 # prepare the logs
@@ -58,7 +59,7 @@ if not os.path.isdir(LOGS_DIR): os.mkdir(LOGS_DIR)
 ### GENERIC FUNCTIONS ###
 
 def reset_configuration():
-    global STORAGE_HOST, STORAGE_PATH, STORAGE_PORT, STORAGE_USER, STORAGE_KEY, REFRESH_RATE, FINAL_FILE, PROGRESS_FILE, RSYNC_BIN_PATH, VERSION
+    global STORAGE_HOST, STORAGE_PATH, STORAGE_PORT, STORAGE_USER, STORAGE_KEY, REFRESH_RATE, FINAL_FILE, PROGRESS_FILE, QUEUE_FILE, RSYNC_BIN_PATH, VERSION
     STORAGE_HOST = "localhost" # the host where the cumulus server is
     STORAGE_PATH = "/storage" # the remote path where data will be sent
     STORAGE_PORT = 8800 # do not use a port already used on the controller (in this case by flask)
@@ -67,11 +68,14 @@ def reset_configuration():
     REFRESH_RATE = 15 # the number of seconds before the daemon wakes up again and checks if there is something in the queue
     FINAL_FILE = ".cumulus.rsync" # a blank file to transfer at the end of each job, to tell the controller that all the files have been transferred
     PROGRESS_FILE = ".cumulus.progress"
+    QUEUE_FILE = "cumulus_rsync_queue.db"
     VERSION = ""
     RSYNC_BIN_PATH = "" # the path to the rsync binary
 
 def initialize(config_file):
-    global STORAGE_HOST, STORAGE_PATH, STORAGE_PORT, STORAGE_USER, STORAGE_KEY, REFRESH_RATE, FINAL_FILE, PROGRESS_FILE, RSYNC_BIN_PATH, VERSION
+    global STORAGE_HOST, STORAGE_PATH, STORAGE_PORT, STORAGE_USER, STORAGE_KEY, REFRESH_RATE, FINAL_FILE, PROGRESS_FILE, QUEUE_FILE, RSYNC_BIN_PATH, VERSION
+    # check that the config file exists
+    if not os.path.isfile(config_file): raise FileNotFoundError(f"Configuration file '{config_file}' not found")
     # configure the logs
     log_format = "[%(asctime)s] %(levelname)s [%(name)s.%(funcName)s:%(lineno)d] %(message)s"
     log_date = "%Y/%m/%d %H:%M:%S"
@@ -95,6 +99,7 @@ def initialize(config_file):
         elif key == "refresh.rate": REFRESH_RATE = int(value)
         elif key == "final.file": FINAL_FILE = value
         elif key == "progress.file": PROGRESS_FILE = os.path.abspath(value)
+        elif key == "queue.file": QUEUE_FILE = os.path.abspath(value)
         elif key == "rsync.bin.path": RSYNC_BIN_PATH = os.path.abspath(value)
         elif key == "version": VERSION = value
     f.close()
@@ -220,53 +225,69 @@ def read_progress_file():
 	else:
 		return ["", 0]
 
-def get_progress_for_job(job_id, owner):
+# def get_progress_for_job(job_id, owner):
+#     # read the progress file
+#     [current_file, current_amount] = read_progress_file()
+#     # prepare a dict for the results
+#     progress_dict = {}
+#     # look for the files in the queue
+#     for file in SEND_QUEUE:
+#         id, username, filepath, _, _, size = file
+#         if job_id == int(id) and owner == username:
+#             filename = os.path.basename(filepath)
+#             if size > 0 and os.path.basename(filename) == current_file:
+#                 progress_dict[filename] = int(current_amount * 100 / size)
+#                 logger.info(f"Job {job_id}: File '{filename}' is being uploaded, current progress is {progress_dict[filename]}%")
+#             else:
+#                 progress_dict[filename] = 0
+#     return progress_dict
+
+def get_progress_for_job(job_id, files):
     # read the progress file
     [current_file, current_amount] = read_progress_file()
     # prepare a dict for the results
     progress_dict = {}
-    # look for the files in the queue
-    for file in SEND_QUEUE:
-        id, username, filepath, _, _, size = file
-        if job_id == int(id) and owner == username:
-            filename = os.path.basename(filepath)
-            if size > 0 and os.path.basename(filename) == current_file:
-                progress_dict[filename] = int(current_amount * 100 / size)
-                logger.info(f"Job {job_id}: File '{filename}' is being uploaded, current progress is {progress_dict[filename]}%")
-            else:
-                progress_dict[filename] = 0
+    # look for the files in the list
+    for file in files:
+        filepath, size = file
+        filename = os.path.basename(filepath)
+        if size > 0 and os.path.basename(filename) == current_file:
+            progress_dict[filename] = int(current_amount * 100 / size)
+            logger.info(f"Job {job_id}: File '{filename}' is being uploaded, current progress is {progress_dict[filename]}%")
+        else:
+            progress_dict[filename] = 0
     return progress_dict
-
+      
 
 ### QUEUE MANAGEMENT ###
 
-# each time the user wants to send files, the files are put in a queue and a job id is returned; the queue and the id are not stored and will be reseted when the daemon is stopped
-SEND_QUEUE = list()
-# we use another queue to store the ids of the jobs canceled, so we do not have to worry about synchronizing the main queue between threads
-CANCEL_QUEUE = list()
-# global variables to store the progress of the file currently uploaded
-CURRENT_JOB = ""
-CURRENT_FILE = ""
+# # each time the user wants to send files, the files are put in a queue and a job id is returned; the queue and the id are not stored and will be reseted when the daemon is stopped
+# SEND_QUEUE = list()
+# # we use another queue to store the ids of the jobs canceled, so we do not have to worry about synchronizing the main queue between threads
+# CANCEL_QUEUE = list()
+# # global variables to store the progress of the file currently uploaded
+# CURRENT_JOB = ""
+# CURRENT_FILE = ""
 
-def is_send_queue_empty():
-    return len(SEND_QUEUE) == 0
+# def is_send_queue_empty():
+#     return len(SEND_QUEUE) == 0
 
-def get_first_job_in_queue():
-    job_id, _, file, _, job_dir, _ = SEND_QUEUE[0]
-    # make sure that a folder does not end with a slash
-    if os.path.isdir(file) and (file.endswith("/") or file.endswith("\\")): file = file[0:-1]
-    # return the job id, the file to send and the job directory
-    return job_id, file, job_dir
+# def get_first_job_in_queue():
+#     job_id, _, file, _, job_dir, _ = SEND_QUEUE[0]
+#     # make sure that a folder does not end with a slash
+#     if os.path.isdir(file) and (file.endswith("/") or file.endswith("\\")): file = file[0:-1]
+#     # return the job id, the file to send and the job directory
+#     return job_id, file, job_dir
 
-def is_job_cancelled(job_id):
-    return job_id in CANCEL_QUEUE
+# def is_job_cancelled(job_id):
+#     return job_id in CANCEL_QUEUE
 
-def remove_first_job_in_queue():
-    SEND_QUEUE.pop(0)
+# def remove_first_job_in_queue():
+#     SEND_QUEUE.pop(0)
 
-def clean_cancel_queue(job_id):
-    for id in CANCEL_QUEUE:
-        if id < job_id: CANCEL_QUEUE.remove(id)
+# def clean_cancel_queue(job_id):
+#     for id in CANCEL_QUEUE:
+#         if id < job_id: CANCEL_QUEUE.remove(id)
 
 def extract_from_settings(settings):
     job_id = settings["job_id"]
@@ -276,34 +297,34 @@ def extract_from_settings(settings):
     local_files = json.loads(settings["local_files"]) # fasta files
     return job_id, job_dir, owner, shared_files, local_files
 
-def add_to_queue(job_id, job_dir, owner, shared_files, local_files):
-    nb = len(shared_files) + len(local_files)
-    for file in local_files:
-        if os.path.isfile(file) or os.path.isdir(file):
-            logger.debug(f"Add '{file}' to the queue, it will be sent to {job_dir}")
-            SEND_QUEUE.append([job_id, owner, file, nb, job_dir, get_size(file)])
-    for file in shared_files:
-        if os.path.isfile(file) or os.path.isdir(file):
-            logger.debug(f"Add '{file}' to the queue, it will be shared for all jobs")
-            SEND_QUEUE.append([job_id, owner, file, nb, "", get_size(file)])
-    # send a blank file to the job folder to warn the controller that all the transfers are done for this job
-    SEND_QUEUE.append([job_id, owner, FINAL_FILE, nb, job_dir, get_size(FINAL_FILE)])
-    logger.info(f"Job {job_id}: {nb} files have been added to the queue")
-    return nb
+# def add_to_queue(job_id, job_dir, owner, shared_files, local_files):
+#     nb = len(shared_files) + len(local_files)
+#     for file in local_files:
+#         if os.path.isfile(file) or os.path.isdir(file):
+#             logger.debug(f"Add '{file}' to the queue, it will be sent to {job_dir}")
+#             SEND_QUEUE.append([job_id, owner, file, nb, job_dir, get_size(file)])
+#     for file in shared_files:
+#         if os.path.isfile(file) or os.path.isdir(file):
+#             logger.debug(f"Add '{file}' to the queue, it will be shared for all jobs")
+#             SEND_QUEUE.append([job_id, owner, file, nb, "", get_size(file)])
+#     # send a blank file to the job folder to warn the controller that all the transfers are done for this job
+#     SEND_QUEUE.append([job_id, owner, FINAL_FILE, nb, job_dir, get_size(FINAL_FILE)])
+#     logger.info(f"Job {job_id}: {nb} files have been added to the queue")
+#     return nb
 
-def list_shared_files_in_queue():
-    # this function is called to check which files are stored on the server
-    files = []
-    for job_id, _, file, _, job_dir, _ in SEND_QUEUE:
-        # do not list the fasta files or the files that have been cancelled
-        if job_dir == "" and not job_id in CANCEL_QUEUE:
-            files.append(os.path.basename(file))
-    # return the list of files, without duplicates
-    return list(dict.fromkeys(files))
+# def list_shared_files_in_queue():
+#     # this function is called to check which files are stored on the server
+#     files = []
+#     for job_id, _, file, _, job_dir, _ in SEND_QUEUE:
+#         # do not list the fasta files or the files that have been cancelled
+#         if job_dir == "" and not job_id in CANCEL_QUEUE:
+#             files.append(os.path.basename(file))
+#     # return the list of files, without duplicates
+#     return list(dict.fromkeys(files))
 
-def get_number_of_cancelled_file_transfers(job_id):
-    return len(list(filter(lambda job: list(job)[0] == job_id, SEND_QUEUE)))
+# def get_number_of_cancelled_file_transfers(job_id):
+#     return len(list(filter(lambda job: list(job)[0] == job_id, SEND_QUEUE)))
 
-def cancel_job(job_id):
-    CANCEL_QUEUE.append(job_id)
-    return get_number_of_cancelled_file_transfers(job_id)
+# def cancel_job(job_id):
+#     CANCEL_QUEUE.append(job_id)
+#     return get_number_of_cancelled_file_transfers(job_id)

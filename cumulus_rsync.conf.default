@@ -6,5 +6,6 @@ storage.public_key = cumulus.pem
 refresh.rate = 15
 final.file = .cumulus.rsync
 progress.file = .cumulus.progress
+queue.file = cumulus_rsync_queue.db
 version = 0.6.0
 rsync.bin.path = path/to/rsync/bin/
