@@ -77,6 +77,7 @@ def get_first_job_in_queue():
     cursor.execute(f"SELECT id, job_id, file_path, job_dir FROM queue ORDER BY id ASC LIMIT 1")
     # get the content
     entry_id, job_id, file_path, job_dir = cursor.fetchone()
+    if job_dir is None: job_dir = ""
     # disconnect and return the content
     cnx.close()
     return entry_id, job_id, file_path, job_dir
