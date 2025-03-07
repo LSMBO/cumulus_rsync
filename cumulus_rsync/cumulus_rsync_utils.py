@@ -95,7 +95,7 @@ def initialize(config_file):
     f = open(config_file, "r")
     for line in f.read().splitlines():
         # skip if the line does not look like "key = value"
-        if not re.match(r"^\s*\w+\s*=\s*\S+\s*$", line): continue
+        if not re.match(r"^\s*[^=]+\s*=\s*.+\s*$", line): continue
         # split the line and remove the spaces
         [key, value] = list(map(lambda item: item.strip(), line.split("=")))
         # store the values
@@ -113,6 +113,10 @@ def initialize(config_file):
         elif key == "rsync.bin.path": RSYNC_BIN_PATH = os.path.abspath(value)
         elif key == "version": VERSION = value
     f.close()
+    # test that files are actually found
+    if not os.path.isfile(STORAGE_KEY): raise FileNotFoundError(f"Public key '{STORAGE_KEY}' not found")
+    if not os.path.isdir(RSYNC_BIN_PATH): raise FileNotFoundError(f"RSync binary '{RSYNC_BIN_PATH}' not found")
+    if not os.path.isfile(FINAL_FILE): raise FileNotFoundError(f"Public key '{FINAL_FILE}' not found")
     # add RSync to path
     os.environ["PATH"] = RSYNC_BIN_PATH + os.pathsep + os.environ["PATH"]
 
