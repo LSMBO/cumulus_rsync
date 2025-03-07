@@ -24,4 +24,4 @@ progress.file = .cumulus.progress
 queue.file = cumulus_rsync_queue.db
 
 # Cumulus RSync agent version number
-version = 0.6.0
+version = 1.0.0
