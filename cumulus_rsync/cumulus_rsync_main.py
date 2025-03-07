@@ -120,4 +120,4 @@ def start():
     # start waitress WSGI server
     serve(app, host = utils.LOCAL_HOST, port = utils.LOCAL_PORT)
 
-start()
+#start()
