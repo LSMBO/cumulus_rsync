@@ -54,6 +54,9 @@ PROGRESS_FILE = ".cumulus.progress"
 QUEUE_FILE = "cumulus_rsync_queue.db"
 VERSION = ""
 RSYNC_BIN_PATH = "" # the path to the rsync binary
+SURVEY = False
+SURVEY_TIME = "23:00"
+SURVEYED_DIRECTORIES = {}
 # prepare the logs
 LOGS_DIR = "logs"
 if not os.path.isdir(LOGS_DIR): os.mkdir(LOGS_DIR)
@@ -61,7 +64,7 @@ if not os.path.isdir(LOGS_DIR): os.mkdir(LOGS_DIR)
 ### GENERIC FUNCTIONS ###
 
 def reset_configuration():
-    global LOCAL_HOST, LOCAL_PORT, STORAGE_HOST, STORAGE_PATH, STORAGE_PORT, STORAGE_USER, STORAGE_KEY, REFRESH_RATE, FINAL_FILE, PROGRESS_FILE, QUEUE_FILE, RSYNC_BIN_PATH, VERSION
+    global LOCAL_HOST, LOCAL_PORT, STORAGE_HOST, STORAGE_PATH, STORAGE_PORT, STORAGE_USER, STORAGE_KEY, REFRESH_RATE, FINAL_FILE, PROGRESS_FILE, QUEUE_FILE, RSYNC_BIN_PATH, VERSION, SURVEY, SURVEY_TIME, SURVEYED_DIRECTORIES
     LOCAL_HOST = "0.0.0.0" # hostname or IP address on which to listen
     LOCAL_PORT = 8800 # port on which to listen
     STORAGE_HOST = "localhost" # the host where the cumulus server is
@@ -75,9 +78,12 @@ def reset_configuration():
     QUEUE_FILE = "cumulus_rsync_queue.db"
     VERSION = ""
     RSYNC_BIN_PATH = "" # the path to the rsync binary
+    SURVEY = False
+    SURVEY_TIME = "23:00"
+    SURVEYED_DIRECTORIES = {}
 
 def initialize(config_file):
-    global LOCAL_HOST, LOCAL_PORT, STORAGE_HOST, STORAGE_PATH, STORAGE_PORT, STORAGE_USER, STORAGE_KEY, REFRESH_RATE, FINAL_FILE, PROGRESS_FILE, QUEUE_FILE, RSYNC_BIN_PATH, VERSION
+    global LOCAL_HOST, LOCAL_PORT, STORAGE_HOST, STORAGE_PATH, STORAGE_PORT, STORAGE_USER, STORAGE_KEY, REFRESH_RATE, FINAL_FILE, PROGRESS_FILE, QUEUE_FILE, RSYNC_BIN_PATH, VERSION, SURVEY, SURVEY_TIME, SURVEYED_DIRECTORIES
     # check that the config file exists
     if not os.path.isfile(config_file): raise FileNotFoundError(f"Configuration file '{config_file}' not found")
     # configure the logs
@@ -112,6 +118,12 @@ def initialize(config_file):
         elif key == "queue.file": QUEUE_FILE = os.path.abspath(value)
         elif key == "rsync.bin.path": RSYNC_BIN_PATH = os.path.abspath(value)
         elif key == "version": VERSION = value
+        # keys for survey
+        elif key == "survey.enabled": SURVEY = value.lower() == "true" or value.lower() == "on"
+        elif key == "survey.time" and re.match(r"^\d\d:\d\d$", value): SURVEY_TIME = value
+        elif match := re.search("survey\\.(.*)\\.dir", key, re.IGNORECASE): SURVEYED_DIRECTORIES[match.group(1)] = {"dir": value}
+        elif match := re.search("survey\\.(.*)\\.regex", key, re.IGNORECASE): SURVEYED_DIRECTORIES[match.group(1)]["regex"] = value
+        elif match := re.search("survey\\.(.*)\\.isfile", key, re.IGNORECASE): SURVEYED_DIRECTORIES[match.group(1)]["regex"] = value.lower() == "true" or value.lower() == "on"
     f.close()
     # test that files are actually found
     if not os.path.isfile(STORAGE_KEY): raise FileNotFoundError(f"Public key '{STORAGE_KEY}' not found")
@@ -119,6 +131,11 @@ def initialize(config_file):
     if not os.path.isfile(FINAL_FILE): raise FileNotFoundError(f"Public key '{FINAL_FILE}' not found")
     # add RSync to path
     os.environ["PATH"] = RSYNC_BIN_PATH + os.pathsep + os.environ["PATH"]
+    # display a message if the survey mode is active
+    if SURVEY:
+        logger.warning("SURVEY MODE IS ACTIVE!")
+        logger.warning(f"The following directories will be surveyed at {SURVEY_TIME}")
+        
 
 def get_size(file):
 	if os.path.isfile(file):

@@ -36,6 +36,7 @@ import os
 import threading
 import cumulus_rsync.cumulus_rsync_utils as utils
 import cumulus_rsync.cumulus_rsync_db as db
+import cumulus_rsync.cumulus_rsync_survey as survey
 
 # prepare the main variables
 app = Flask(__name__)
@@ -45,7 +46,17 @@ def daemon():
 	logger.info(f"Cumulus RSync daemon is running, data will be sent to {utils.get_storage_info()}")
 	# start the main loop
 	while True:
-		# logger.debug(f"{len(SEND_QUEUE)} file(s) in the queue...")
+		# once a day, add all new files in the surveyed directories
+		if utils.SURVEY and survey.is_time_to_survey(utils.SURVEY_TIME):
+			# TODO this was not tested live!!
+			logger.info("Entering survey mode...")
+			# get the new files
+			files = survey.survey_directories(utils.SURVEYED_DIRECTORIES)
+			# add the files to the queue with a fake job_id, no job_dir, fake owner and no local files
+			db.add_to_queue(0, "", "cumulus.surveyor", files, [], False)
+			# reset the boolean
+			survey.set_surveyed_today()
+		# check if there is something to do
 		if not db.is_queue_empty():
 			# get the first and oldest entry in the queue
 			entry_id, _, file, job_dir = db.get_first_job_in_queue()

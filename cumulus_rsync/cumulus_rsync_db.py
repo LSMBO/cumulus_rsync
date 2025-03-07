@@ -102,7 +102,7 @@ def get_job_owner(job_id):
     cnx.close()
     return owner
 
-def add_to_queue(job_id, job_dir, owner, shared_files, local_files):
+def add_to_queue(job_id, job_dir, owner, shared_files, local_files, insert_final_file = True):
     # connect to the database
     cnx, cursor = connect()
     # count the total number of files in this job
@@ -116,7 +116,8 @@ def add_to_queue(job_id, job_dir, owner, shared_files, local_files):
             logger.debug(f"Add '{file}' to the queue, it will be shared for all jobs")
             cursor.execute(f"INSERT INTO queue VALUES (?, ?, ?, ?, ?, ?, ?)", (None, job_id, owner, file, utils.get_size(file), nb, None))
     # send a blank file to the job folder to warn the controller that all the transfers are done for this job
-    cursor.execute(f"INSERT INTO queue VALUES (?, ?, ?, ?, ?, ?, ?)", (None, job_id, owner, utils.FINAL_FILE, utils.get_size(utils.FINAL_FILE), nb, job_dir))
+    if insert_final_file:
+        cursor.execute(f"INSERT INTO queue VALUES (?, ?, ?, ?, ?, ?, ?)", (None, job_id, owner, utils.FINAL_FILE, utils.get_size(utils.FINAL_FILE), nb, job_dir))
     # commit the changes and return the number of added entries to the queue (minus the final file)
     cnx.commit()
     cnx.close()

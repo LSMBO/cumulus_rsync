@@ -25,3 +25,13 @@ queue.file = cumulus_rsync_queue.db
 
 # Cumulus RSync agent version number
 version = 1.0.0
+
+# Survey configuration
+survey.enabled = false
+survey.time = "23:00"
+survey.astral.dir = "D:/path/to/astral/data"
+survey.astral.regex = "AT.*.raw"
+survey.astral.isfile = true
+survey.timstofpro.dir = "D:/path/to/timstofpro/data"
+survey.timstofpro.regex = "TP.*.d"
+survey.astral.isfile = false

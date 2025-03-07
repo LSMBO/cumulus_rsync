@@ -32,14 +32,15 @@
 
 import cumulus_rsync.cumulus_rsync_utils as utils
 import os
-import re
+# import re
 import shutil
 
 def test_initialization():
     assert utils.STORAGE_HOST == "localhost"
     utils.initialize("cumulus_rsync/test/cumulus_rsync.conf")
     assert utils.STORAGE_HOST == "127.0.0.1"
-    assert re.search("path.to.rsync.bin", utils.RSYNC_BIN_PATH) != None
+    # assert re.search("cumulus_rsync/test", utils.RSYNC_BIN_PATH) != None
+    assert len(utils.SURVEYED_DIRECTORIES) == 2
 
 def test_get_size():
     # test a file

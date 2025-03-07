@@ -3,6 +3,7 @@ altgraph==0.17.4
 attrs==23.2.0
 bcrypt==4.2.0
 blinker==1.8.2
+Brotli==1.1.0
 cachetools==5.3.3
 certifi==2024.6.2
 cffi==1.17.0
@@ -10,11 +11,12 @@ charset-normalizer==3.3.2
 click==8.1.7
 colorama==0.4.6
 cryptography==43.0.0
--e git+https://github.com/LSMBO/cumulus_rsync.git@e05b00fbdfa64c08d9d77294cdfd1c17c3de3375#egg=cumulus_rsync
+-e git+https://github.com/LSMBO/cumulus_rsync.git@da95a13cbfe04812bc44a587956ddde23abd6be8#egg=cumulus_rsync
 Flask==3.0.3
 gitdb==4.0.11
 GitPython==3.1.43
 idna==3.7
+inflate64==1.0.1
 iniconfig==2.0.0
 itsdangerous==2.2.0
 Jinja2==3.1.4
@@ -23,6 +25,7 @@ jsonschema-specifications==2023.12.1
 markdown-it-py==3.0.0
 MarkupSafe==2.1.5
 mdurl==0.1.2
+multivolumefile==0.2.3
 numpy==2.0.0
 packaging==24.1
 pandas==2.2.2
@@ -31,17 +34,23 @@ pefile==2023.2.7
 pillow==10.3.0
 pluggy==1.5.0
 protobuf==5.27.2
+psutil==7.0.0
+py7zr==0.22.0
 pyarrow==16.1.0
+pybcj==1.0.3
 pycparser==2.22
+pycryptodomex==3.21.0
 pydeck==0.9.1
 Pygments==2.18.0
 pyinstaller==6.12.0
 pyinstaller-hooks-contrib==2025.1
 PyNaCl==1.5.0
+pyppmd==1.1.1
 pytest==8.3.4
 python-dateutil==2.9.0.post0
 pytz==2024.1
 pywin32-ctypes==0.2.3
+pyzstd==0.16.2
 referencing==0.35.1
 requests==2.32.3
 rich==13.7.1
@@ -50,6 +59,7 @@ six==1.16.0
 smmap==5.0.1
 streamlit==1.36.0
 tenacity==8.4.2
+texttable==1.7.0
 toml==0.10.2
 toolz==0.12.1
 tornado==6.4.1
