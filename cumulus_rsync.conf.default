@@ -28,10 +28,11 @@ version = 1.0.0
 
 # Survey configuration
 survey.enabled = false
-survey.time = "23:00"
-survey.astral.dir = "D:/path/to/astral/data"
-survey.astral.regex = "AT.*.raw"
+survey.time = 23:00
+survey.depth = 1
+survey.astral.dir = D:/path/to/astral/data
+survey.astral.regex = AT.*.raw
 survey.astral.isfile = true
-survey.timstofpro.dir = "D:/path/to/timstofpro/data"
-survey.timstofpro.regex = "TP.*.d"
-survey.astral.isfile = false
+survey.timstofpro.dir = D:/path/to/timstofpro/data
+survey.timstofpro.regex = TP.*.d
+survey.timstofpro.isfile = false

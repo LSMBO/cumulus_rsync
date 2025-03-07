@@ -35,7 +35,7 @@ import time
 import cumulus_rsync.cumulus_rsync_survey as survey
 
 def test_is_time_to_survey():
-    assert survey.SURVEY_DONE == False
+    assert survey.IS_SURVEY_DONE == False
     # create a survey time 1 hour in the past
     survey_time_before = time.strftime("%H:%M", time.localtime(time.time() - 3600))
     # check the time before the survey time
@@ -46,11 +46,33 @@ def test_is_time_to_survey():
     assert survey.is_time_to_survey(survey_time_after) == False
 
 def test_set_surveyed_today():
-    assert survey.SURVEY_DONE == False
+    assert survey.IS_SURVEY_DONE == False
     survey.set_surveyed_today()
-    assert survey.SURVEY_DONE == True
+    assert survey.IS_SURVEY_DONE == True
+
+def test_change_file_min_age():
+    assert survey.MIN_AGE_IN_HOURS == 2
+    survey.change_file_min_age(1)
+    assert survey.MIN_AGE_IN_HOURS == 1
+    survey.change_file_min_age(2)
+
+def test_change_file_max_age():
+    assert survey.MAX_AGE_IN_HOURS == 36
+    survey.change_file_max_age(-1)
+    assert survey.MAX_AGE_IN_HOURS == -1
+    survey.change_file_max_age(36)
+
+def test_is_valid():
+    survey.change_file_max_age(-1)
+    assert survey.is_valid("cumulus_rsync/test/File1.raw", True, "File.*\\.raw") == True
+    assert survey.is_valid("cumulus_rsync/test/File1.raw", False, "File.*\\.raw") == False
+    assert survey.is_valid("cumulus_rsync/test/File1.raw", True, "File.*\\.txt") == False
+    survey.change_file_max_age(36)
 
 def test_survey_directories():
+    # remove the fake files if they haven't been removed yet
+    if os.path.isfile("cumulus_rsync/test/File4.raw"): os.remove("cumulus_rsync/test/File4.raw")
+    if os.path.isfile("cumulus_rsync/test/File4.d"): os.remove("cumulus_rsync/test/File4.d")
     # create a fake survey map
     directories = { "test": {"dir": "cumulus_rsync/test", "isfile": True, "regex": "File.*\\.raw"} }
     files = survey.survey_directories(directories)
@@ -58,6 +80,7 @@ def test_survey_directories():
     # create fake files
     open("cumulus_rsync/test/File4.raw", "w").close()
     open("cumulus_rsync/test/File4.d", "w").close()
+    survey.change_file_min_age(0)
     files = survey.survey_directories(directories)
     assert len(files) == 1 # only one file is recent
     # remove the fake files

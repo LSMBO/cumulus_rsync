@@ -51,7 +51,7 @@ def daemon():
 			# TODO this was not tested live!!
 			logger.info("Entering survey mode...")
 			# get the new files
-			files = survey.survey_directories(utils.SURVEYED_DIRECTORIES)
+			files = survey.survey_directories(utils.SURVEYED_DIRECTORIES, utils.SURVEY_DEPTH)
 			# add the files to the queue with a fake job_id, no job_dir, fake owner and no local files
 			db.add_to_queue(0, "", "cumulus.surveyor", files, [], False)
 			# reset the boolean

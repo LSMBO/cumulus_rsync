@@ -38,37 +38,74 @@ import time
 logger = logging.getLogger(__name__)
 
 # this variable is local, not from the config file
-SURVEY_DONE = False
+IS_SURVEY_DONE = False
+MIN_AGE_IN_HOURS = 2
+MAX_AGE_IN_HOURS = 36
 
 # the functions will be called from the main.daemon() loop
 def is_time_to_survey(survey_time):
-    global SURVEY_DONE
+    global IS_SURVEY_DONE
     # reset the boolean if the day has changed since the last survey
-    if SURVEY_DONE and time.strftime("%H:%M") < survey_time: SURVEY_DONE = False
+    if IS_SURVEY_DONE and time.strftime("%H:%M") < survey_time: IS_SURVEY_DONE = False
     # return True if the time is right and the survey has not been done yet
-    return time.strftime("%H:%M") >= survey_time and SURVEY_DONE == False
+    logger.debug(f"Survey time: {survey_time}, current time: {time.strftime('%H:%M')}, survey done: {IS_SURVEY_DONE}")
+    return time.strftime("%H:%M") >= survey_time and IS_SURVEY_DONE == False
 
 def set_surveyed_today():
-    global SURVEY_DONE
-    SURVEY_DONE = True
+    global IS_SURVEY_DONE
+    IS_SURVEY_DONE = True
 
-def survey_directories(directories):
+# this function is only needed for tests
+def change_file_min_age(min_age):
+    global MIN_AGE_IN_HOURS
+    MIN_AGE_IN_HOURS = min_age
+
+# this function is only needed for tests
+def change_file_max_age(max_age):
+    global MAX_AGE_IN_HOURS
+    MAX_AGE_IN_HOURS = max_age
+
+def is_valid(file_path, isfile, regex):
+    # do not consider folders if we are expecting files and vice versa
+    if isfile and not os.path.isfile(file_path): 
+        # print(f"File '{file_path}' is not a file")
+        return False
+    if not isfile and not os.path.isdir(file_path): 
+        # print(f"File '{file_path}' is not a directory")
+        return False
+    # do not consider the files that do not match the regex
+    if not re.match(regex, os.path.basename(file_path)): 
+        # print(f"File '{file_path}' does not match the regex '{regex}'")
+        return False
+    # do not consider the files that are too older than 36 hours (only files from the last 24 hours will be actually sent)
+    if MAX_AGE_IN_HOURS >= 0 and os.path.getmtime(file_path) < time.time() - MAX_AGE_IN_HOURS * 3600: 
+        # print(f"File '{file_path}' is too old")
+        return False
+    # do not consider the files that are too recent (less than 2 hours) to avoid sending files that are still in acquisition
+    if os.path.getmtime(file_path) > time.time() - MIN_AGE_IN_HOURS * 3600: 
+        # print(f"File '{file_path}' is too recent")
+        return False
+    return True
+
+def parse_folder(path, isfile, regex, depth, max_depth):
     files = []
-    # loop over the directories and return the files that appeared in the last 24 hours
+    if depth < max_depth:
+        for file in os.listdir(path):
+            # get the full path of the file
+            file_path = os.path.join(path, file)
+            # add the file/folder if it is valid
+            if is_valid(file_path, isfile, regex):
+                logger.info(f"Surveyed file will be uploaded to the server: '{file_path}'")
+                files.append(file_path)
+            elif os.path.isdir(file_path):
+                files += parse_folder(file_path, isfile, regex, depth + 1, max_depth)
+    return files
+
+def survey_directories(directories, depth = 1):
+    files = []
+    # loop over the directories and return the files that appeared in the last 36 hours
     for name, data in directories.items():
         logger.info(f"Surveying directory {name}")
-        # get the list of files
-        for file in os.listdir(data["dir"]):
-            # get the full path of the file
-            file_path = os.path.join(data["dir"], file)
-            # only consider the right type of data
-            if data["isfile"] and not os.path.isfile(file_path): continue
-            if not data["isfile"] and not os.path.isdir(file_path): continue
-            # only consider the files that match the regex
-            if not re.match(data["regex"], file): continue
-            # only consider the files that are less than 24 hours old
-            if os.path.getmtime(file_path) < time.time() - 24 * 3600: continue
-            # add the full path to the list
-            logger.info(f"Surveyed file will be uploaded to the server: '{file_path}'")
-            files.append(file_path)
+        # get the list of files for this directory and its subdirectories
+        files += parse_folder(data["dir"], data["isfile"], data["regex"], 0, depth)
     return files
