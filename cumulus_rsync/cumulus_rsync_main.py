@@ -118,6 +118,6 @@ def start():
     # start the daemon
     threading.Thread(target=daemon, args=(), daemon=True).start()
     # start waitress WSGI server
-    serve(app, host='0.0.0.0', port = 8800)
+    serve(app, host = utils.LOCAL_HOST, port = utils.LOCAL_PORT)
 
 start()

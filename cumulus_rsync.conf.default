@@ -1,11 +1,27 @@
+# Cumulus Rsync Configuration File
+
+# Local host and port
+local.host = 0.0.0.0
+local.port = 8800
+
+# Information about the controller, where cumulus_server is running
 storage.host = 127.0.0.1
 storage.path = /storage
 storage.port = 8800
 storage.user = me
+# Path to the public key used to authenticate with the controller (no password)
 storage.public_key = cumulus.pem
-refresh.rate = 15
-final.file = .cumulus.rsync
-progress.file = .cumulus.progress
-queue.file = cumulus_rsync_queue.db
-version = 0.6.0
+
+# Path to the RSync binary
 rsync.bin.path = path/to/rsync/bin/
+# Refresh rate in seconds, used to regularly check if there are files to transfer
+refresh.rate = 15
+# File used to indicate to the server that all the files have been transferred for a given job
+final.file = .cumulus.rsync
+# Log file of RSync, used to track the progress of the transfers
+progress.file = .cumulus.progress
+# SQLite file used to store the queue of files to transfer
+queue.file = cumulus_rsync_queue.db
+
+# Cumulus RSync agent version number
+version = 0.6.0

@@ -41,6 +41,8 @@ import time
 logger = logging.getLogger(__name__)
 
 # default config
+LOCAL_HOST = "0.0.0.0" # hostname or IP address on which to listen
+LOCAL_PORT = 8800 # port on which to listen
 STORAGE_HOST = "localhost" # the host where the cumulus server is
 STORAGE_PATH = "/storage" # the remote path where data will be sent
 STORAGE_PORT = 8800 # do not use a port already used on the controller (in this case by flask)
@@ -59,7 +61,9 @@ if not os.path.isdir(LOGS_DIR): os.mkdir(LOGS_DIR)
 ### GENERIC FUNCTIONS ###
 
 def reset_configuration():
-    global STORAGE_HOST, STORAGE_PATH, STORAGE_PORT, STORAGE_USER, STORAGE_KEY, REFRESH_RATE, FINAL_FILE, PROGRESS_FILE, QUEUE_FILE, RSYNC_BIN_PATH, VERSION
+    global LOCAL_HOST, LOCAL_PORT, STORAGE_HOST, STORAGE_PATH, STORAGE_PORT, STORAGE_USER, STORAGE_KEY, REFRESH_RATE, FINAL_FILE, PROGRESS_FILE, QUEUE_FILE, RSYNC_BIN_PATH, VERSION
+    LOCAL_HOST = "0.0.0.0" # hostname or IP address on which to listen
+    LOCAL_PORT = 8800 # port on which to listen
     STORAGE_HOST = "localhost" # the host where the cumulus server is
     STORAGE_PATH = "/storage" # the remote path where data will be sent
     STORAGE_PORT = 8800 # do not use a port already used on the controller (in this case by flask)
@@ -73,7 +77,7 @@ def reset_configuration():
     RSYNC_BIN_PATH = "" # the path to the rsync binary
 
 def initialize(config_file):
-    global STORAGE_HOST, STORAGE_PATH, STORAGE_PORT, STORAGE_USER, STORAGE_KEY, REFRESH_RATE, FINAL_FILE, PROGRESS_FILE, QUEUE_FILE, RSYNC_BIN_PATH, VERSION
+    global LOCAL_HOST, LOCAL_PORT, STORAGE_HOST, STORAGE_PATH, STORAGE_PORT, STORAGE_USER, STORAGE_KEY, REFRESH_RATE, FINAL_FILE, PROGRESS_FILE, QUEUE_FILE, RSYNC_BIN_PATH, VERSION
     # check that the config file exists
     if not os.path.isfile(config_file): raise FileNotFoundError(f"Configuration file '{config_file}' not found")
     # configure the logs
@@ -90,8 +94,14 @@ def initialize(config_file):
     # read the config file
     f = open(config_file, "r")
     for line in f.read().splitlines():
+        # skip if the line does not look like "key = value"
+        if not re.match(r"^\s*\w+\s*=\s*\S+\s*$", line): continue
+        # split the line and remove the spaces
         [key, value] = list(map(lambda item: item.strip(), line.split("=")))
-        if key == "storage.path": STORAGE_PATH = value
+        # store the values
+        if key == "local.path": LOCAL_HOST = value
+        elif key == "local.port": LOCAL_PORT = value
+        elif key == "storage.path": STORAGE_PATH = value
         elif key == "storage.host": STORAGE_HOST = value
         elif key == "storage.port": STORAGE_PORT = value
         elif key == "storage.user": STORAGE_USER = value
