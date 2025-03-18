@@ -41,53 +41,106 @@ import time
 logger = logging.getLogger(__name__)
 
 # default config
-LOCAL_HOST = "0.0.0.0" # hostname or IP address on which to listen
-LOCAL_PORT = 8800 # port on which to listen
-STORAGE_HOST = "localhost" # the host where the cumulus server is
-STORAGE_PATH = "/storage" # the remote path where data will be sent
-STORAGE_PORT = 8800 # do not use a port already used on the controller (in this case by flask)
-STORAGE_USER = "me" # the remote user name
-STORAGE_KEY = os.path.abspath("cumulus.pem") # the public key to connect to the server, it has to be an absolute path
-REFRESH_RATE = 15 # the number of seconds before the daemon wakes up again and checks if there is something in the queue
-FINAL_FILE = ".cumulus.rsync" # a blank file to transfer at the end of each job, to tell the controller that all the files have been transferred
-PROGRESS_FILE = ".cumulus.progress"
-QUEUE_FILE = "cumulus_rsync_queue.db"
-VERSION = ""
-RSYNC_BIN_PATH = "" # the path to the rsync binary
-SURVEY = False
-SURVEY_DEPTH = 1 # 1 by default, it means that only the first level of the directory will be surveyed (max 3)
-SURVEY_TIME = "23:00"
-SURVEYED_DIRECTORIES = {}
+CONFIG = {}
+# storage free space limit
+STORAGE_FREE_LIMIT = 10737418240 # below this amount of free space, there will be no upload (10GB by default)
+STORAGE_FREE_LIMIT_HR = STORAGE_FREE_LIMIT // 2**30
+STORAGE_FREE_LIMIT_SLEEP = 900 # wait 15 minutes between each check
+STORAGE_USAGE_LAST_CALL = 0 # timestamp in seconds of the last call to diskusage
+STORAGE_USAGE_WAITING_TIME = 60 # 1 minute between two calls to diskusage, should be small enough to avoid that STORAGE_FREE_LIMIT is reached
 # prepare the logs
 LOGS_DIR = "logs"
 if not os.path.isdir(LOGS_DIR): os.mkdir(LOGS_DIR)
 
-### GENERIC FUNCTIONS ###
+### CONFIG FUNCTIONS ###
+
+def get_config_value(key):
+    if key in CONFIG: return CONFIG[key]
+    else: 
+        logger.error(f"Key '{key}' not found in the configuration file")
+        return None
+def get_local_host(): return get_config_value("local.host")
+def get_local_port(): return get_config_value("local.port")
+def get_storage_host(): return get_config_value("storage.host")
+def get_storage_path(): return get_config_value("storage.path")
+def get_storage_port(): return get_config_value("storage.port")
+def get_storage_user(): return get_config_value("storage.user")
+def get_storage_key(): return get_config_value("storage.public_key")
+def get_refresh_rate(): return get_config_value("refresh.rate")
+def get_final_file(): return get_config_value("final.file")
+def get_progress_file(): return get_config_value("progress.file")
+def get_queue_file(): return get_config_value("queue.file")
+def get_rsync_path(): return get_config_value("rsync.bin.path")
+def get_ssh_path(): return get_config_value("ssh.bin.path")
+def get_version(): return get_config_value("version")
+def is_survey_activated(): return get_config_value("survey.enabled")
+def get_survey_depth(): return get_config_value("survey.depth")
+def get_survey_time(): return get_config_value("survey.time")
+def get_surveyed_directories(): return get_config_value("surveyed_directories")
 
 def reset_configuration():
-    global LOCAL_HOST, LOCAL_PORT, STORAGE_HOST, STORAGE_PATH, STORAGE_PORT, STORAGE_USER, STORAGE_KEY, REFRESH_RATE, FINAL_FILE, PROGRESS_FILE, QUEUE_FILE, RSYNC_BIN_PATH, VERSION, SURVEY, SURVEY_DEPTH, SURVEY_TIME, SURVEYED_DIRECTORIES
-    LOCAL_HOST = "0.0.0.0" # hostname or IP address on which to listen
-    LOCAL_PORT = 8800 # port on which to listen
-    STORAGE_HOST = "localhost" # the host where the cumulus server is
-    STORAGE_PATH = "/storage" # the remote path where data will be sent
-    STORAGE_PORT = 8800 # do not use a port already used on the controller (in this case by flask)
-    STORAGE_USER = "me" # the remote user name
-    STORAGE_KEY = os.path.abspath("cumulus.pem") # the public key to connect to the server, it has to be an absolute path
-    REFRESH_RATE = 15 # the number of seconds before the daemon wakes up again and checks if there is something in the queue
-    FINAL_FILE = ".cumulus.rsync" # a blank file to transfer at the end of each job, to tell the controller that all the files have been transferred
-    PROGRESS_FILE = ".cumulus.progress"
-    QUEUE_FILE = "cumulus_rsync_queue.db"
-    VERSION = ""
-    RSYNC_BIN_PATH = "" # the path to the rsync binary
-    SURVEY = False
-    SURVEY_DEPTH = 1
-    SURVEY_TIME = "23:00"
-    SURVEYED_DIRECTORIES = {}
+    global CONFIG
+    CONFIG = {}
+    CONFIG["local.host"] = "0.0.0.0" # hostname or IP address on which to listen
+    CONFIG["local.port"] = 8800 # port on which to listen
+    CONFIG["storage.host"] = "localhost" # the host where the cumulus server is
+    CONFIG["storage.path"] = "/storage" # the remote path where data will be sent
+    CONFIG["storage.port"] = 8800 # do not use a port already used on the controller (in this case by flask)
+    CONFIG["storage.user"] = "me" # the remote user name
+    CONFIG["storage.public_key"] = os.path.abspath("cumulus.pem") # the public key to connect to the server, it has to be an absolute path
+    CONFIG["refresh.rate"] = 15 # the number of seconds before the daemon wakes up again and checks if there is something in the queue
+    CONFIG["final.file"] = ".cumulus.rsync" # a blank file to transfer at the end of each job, to tell the controller that all the files have been transferred
+    CONFIG["progress.file"] = ".cumulus.progress"
+    CONFIG["queue.file"] = "cumulus_rsync_queue.db"
+    CONFIG["version"] = ""
+    CONFIG["rsync.bin.path"] = "" # the path to the rsync binary
+    CONFIG["ssh.bin.path"] = "" # the path to the ssh binary
+    CONFIG["survey.enabled"] = False
+    CONFIG["survey.depth"] = 1
+    CONFIG["survey.time"] = "23:00"
+    CONFIG["surveyed_directories"] = {}
 
-def initialize(config_file):
-    global LOCAL_HOST, LOCAL_PORT, STORAGE_HOST, STORAGE_PATH, STORAGE_PORT, STORAGE_USER, STORAGE_KEY, REFRESH_RATE, FINAL_FILE, PROGRESS_FILE, QUEUE_FILE, RSYNC_BIN_PATH, VERSION, SURVEY, SURVEY_DEPTH, SURVEY_TIME, SURVEYED_DIRECTORIES
+def read_config_file(config_file):
+    global CONFIG
     # check that the config file exists
     if not os.path.isfile(config_file): raise FileNotFoundError(f"Configuration file '{config_file}' not found")
+    # prepare the map
+    CONFIG = {}
+    CONFIG["surveyed_directories"] = {}
+    directories = {}
+    # read the config file
+    f = open(config_file, "r")
+    for line in f.read().splitlines():
+        # skip if the line does not look like "key = value"
+        if not re.match(r"^\s*[^=]+\s*=\s*.+\s*$", line): continue
+        # split the line and remove the spaces
+        [key, value] = list(map(lambda item: item.strip(), line.split("=")))
+        # store the values
+        if key == "local.host": CONFIG[key] = value
+        elif key == "local.port": CONFIG[key] = value
+        elif key == "storage.path": CONFIG[key] = value
+        elif key == "storage.host": CONFIG[key] = value
+        elif key == "storage.port": CONFIG[key] = value
+        elif key == "storage.user": CONFIG[key] = value
+        elif key == "storage.public_key": CONFIG[key] = os.path.abspath(value)
+        elif key == "refresh.rate": CONFIG[key] = int(value)
+        elif key == "final.file": CONFIG[key] = value
+        elif key == "progress.file": CONFIG[key] = os.path.abspath(value)
+        elif key == "queue.file": CONFIG[key] = os.path.abspath(value)
+        elif key == "rsync.bin.path": CONFIG[key] = os.path.abspath(value)
+        elif key == "ssh.bin.path": CONFIG[key] = os.path.abspath(value)
+        elif key == "version": CONFIG[key] = value
+        # keys for survey
+        elif key == "survey.enabled": CONFIG[key] = value.lower() == "true" or value.lower() == "on"
+        elif key == "survey.depth" and str(value).isnumeric: CONFIG[key] = int(value)
+        elif key == "survey.time" and re.match(r"^\d\d:\d\d$", value): CONFIG[key] = value
+        elif match := re.search("survey\\.(.*)\\.dir", key, re.IGNORECASE): directories[match.group(1)] = {"dir": value}
+        elif match := re.search("survey\\.(.*)\\.regex", key, re.IGNORECASE): directories[match.group(1)]["regex"] = value
+        elif match := re.search("survey\\.(.*)\\.isfile", key, re.IGNORECASE): directories[match.group(1)]["isfile"] = value.lower() == "true" or value.lower() == "on"
+    CONFIG["surveyed_directories"] = directories
+    f.close()
+
+def initialize(config_file):
     # configure the logs
     log_format = "[%(asctime)s] %(levelname)s [%(name)s.%(funcName)s:%(lineno)d] %(message)s"
     log_date = "%Y/%m/%d %H:%M:%S"
@@ -100,47 +153,27 @@ def initialize(config_file):
             datefmt = log_date
         )
     # read the config file
-    f = open(config_file, "r")
-    for line in f.read().splitlines():
-        # skip if the line does not look like "key = value"
-        if not re.match(r"^\s*[^=]+\s*=\s*.+\s*$", line): continue
-        # split the line and remove the spaces
-        [key, value] = list(map(lambda item: item.strip(), line.split("=")))
-        # store the values
-        if key == "local.path": LOCAL_HOST = value
-        elif key == "local.port": LOCAL_PORT = value
-        elif key == "storage.path": STORAGE_PATH = value
-        elif key == "storage.host": STORAGE_HOST = value
-        elif key == "storage.port": STORAGE_PORT = value
-        elif key == "storage.user": STORAGE_USER = value
-        elif key == "storage.public_key": STORAGE_KEY = os.path.abspath(value)
-        elif key == "refresh.rate": REFRESH_RATE = int(value)
-        elif key == "final.file": FINAL_FILE = value
-        elif key == "progress.file": PROGRESS_FILE = os.path.abspath(value)
-        elif key == "queue.file": QUEUE_FILE = os.path.abspath(value)
-        elif key == "rsync.bin.path": RSYNC_BIN_PATH = os.path.abspath(value)
-        elif key == "version": VERSION = value
-        # keys for survey
-        elif key == "survey.enabled": SURVEY = value.lower() == "true" or value.lower() == "on"
-        elif key == "survey.depth" and str(value).isnumeric: SURVEY_DEPTH = int(value)
-        elif key == "survey.time" and re.match(r"^\d\d:\d\d$", value): SURVEY_TIME = value
-        elif match := re.search("survey\\.(.*)\\.dir", key, re.IGNORECASE): SURVEYED_DIRECTORIES[match.group(1)] = {"dir": value}
-        elif match := re.search("survey\\.(.*)\\.regex", key, re.IGNORECASE): SURVEYED_DIRECTORIES[match.group(1)]["regex"] = value
-        elif match := re.search("survey\\.(.*)\\.isfile", key, re.IGNORECASE): SURVEYED_DIRECTORIES[match.group(1)]["isfile"] = value.lower() == "true" or value.lower() == "on"
-    f.close()
+    read_config_file(config_file)
     # test that files are actually found
-    if not os.path.isfile(STORAGE_KEY): raise FileNotFoundError(f"Public key '{STORAGE_KEY}' not found")
-    if not os.path.isdir(RSYNC_BIN_PATH): raise FileNotFoundError(f"RSync binary '{RSYNC_BIN_PATH}' not found")
-    if not os.path.isfile(FINAL_FILE): raise FileNotFoundError(f"Public key '{FINAL_FILE}' not found")
-    # add RSync to path
-    os.environ["PATH"] = RSYNC_BIN_PATH + os.pathsep + os.environ["PATH"]
+    if not os.path.isfile(get_storage_key()): raise FileNotFoundError(f"Public key '{get_storage_key()}' not found")
+    # create an empty file if the final file does not exist
+    if not os.path.isfile(get_final_file()):
+        CONFIG["final.file"] = ".cumulus.rsync"
+        f = open(get_final_file(), "w")
+        f.close()
+    # add RSync and SSH to path
+    if os.path.isdir(get_rsync_path()): os.environ["PATH"] = get_rsync_path() + os.pathsep + os.environ["PATH"]
+    if os.path.isdir(get_ssh_path()): os.environ["PATH"] = get_ssh_path() + os.pathsep + os.environ["PATH"]
+    os.system("where rsync")
+    os.system("where ssh")
     # display a message if the survey mode is active
-    if SURVEY:
-        if SURVEY_DEPTH < 1: SURVEY_DEPTH = 1
-        if SURVEY_DEPTH > 3: SURVEY_DEPTH = 3
+    if is_survey_activated():
+        if get_survey_depth() < 1: CONFIG["survey.depth"] = 1
+        if get_survey_depth() > 3: CONFIG["survey.depth"] = 3
         logger.warning("SURVEY MODE IS ACTIVE!")
-        logger.warning(f"The following directories will be surveyed at {SURVEY_TIME}")
-        
+        logger.warning(f"The following directories will be surveyed at {get_survey_time()}")
+
+### GENERIC FUNCTIONS ###
 
 def get_size(file):
 	if os.path.isfile(file):
@@ -155,9 +188,17 @@ def get_size(file):
 		return total_size
 
 def get_storage_info():
-    return f"{STORAGE_USER}@{STORAGE_HOST}:{STORAGE_PATH}"
+    return f"{get_storage_user()}@{get_storage_host()}:{get_storage_path()}"
+      
+def extract_from_settings(settings):
+    job_id = settings["job_id"]
+    job_dir = settings["job_dir"]
+    owner = settings["owner"]
+    shared_files = json.loads(settings["files"]) # raw files
+    local_files = json.loads(settings["local_files"]) # fasta files
+    return job_id, job_dir, owner, shared_files, local_files
 
-def wait(seconds = REFRESH_RATE):
+def wait(seconds = 15):
     time.sleep(seconds)
 
 ### FUNCTIONS FOR REMOTE SERVER ###
@@ -174,25 +215,19 @@ def get_rsync_command(file, job_dir):
     #   -o 'StrictHostKeyChecking no': do not ask if the key has to be trusted
     # --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r: make sure that directories have permission 755 and files 644
     # TODO send the file even if it exists on receiver but with a different size
-    options = f"-r --ignore-existing --exclude='*-wal' --progress -e 'ssh -l {STORAGE_USER} -i \"{STORAGE_KEY}\" -o \"StrictHostKeyChecking no\"' --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r"
+    options = f"-r --ignore-existing --exclude='*-wal' --progress -e 'ssh -l {get_storage_user()} -i \"{get_storage_key()}\" -o \"StrictHostKeyChecking no\"' --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r"
     # determine the remote folder (either main storage, or job folder)
-    remote_path = f"{STORAGE_HOST}:{STORAGE_PATH}/jobs/{job_dir}" if job_dir != "" else f"{STORAGE_HOST}:{STORAGE_PATH}/data"
+    remote_path = f"{get_storage_host()}:{get_storage_path()}/jobs/{job_dir}" if job_dir != "" else f"{get_storage_host()}:{get_storage_path()}/data"
     # log the action
     if os.path.isdir(file): logger.debug(f"Sending directory '{os.path.basename(file)}' to '{remote_path}'")
     else: logger.debug(f"Sending file '{os.path.basename(file)}' to '{remote_path}'")
     # cwrsync requires drives to be prepended (Windows only)
     if os.name == 'nt': file = re.sub(r"^([a-zA-Z]):", r"/cygdrive/\1", file.replace("\\", "/"))
     # return the command
-    return f"rsync {options} \"{file}\" \"{remote_path}\" > {PROGRESS_FILE}"
-
-STORAGE_FREE_LIMIT = 10737418240 # below this amount of free space, there will be no upload (10GB by default)
-STORAGE_FREE_LIMIT_HR = STORAGE_FREE_LIMIT // 2**30
-STORAGE_FREE_LIMIT_SLEEP = 900 # wait 15 minutes between each check
-STORAGE_USAGE_LAST_CALL = 0 # timestamp in seconds of the last call to diskusage
-STORAGE_USAGE_WAITING_TIME = 60 # 1 minute between two calls to diskusage, should be small enough to avoid that STORAGE_FREE_LIMIT is reached
+    return f"rsync {options} \"{file}\" \"{remote_path}\" > \"{get_progress_file()}\""
 
 def get_server_free_space():
-    response = requests.get(f"http://{STORAGE_HOST}:{STORAGE_PORT}/diskusage")
+    response = requests.get(f"http://{get_storage_host()}:{get_storage_port()}/diskusage")
     return response.json()[2]
 
 def is_enough_free_space_on_server(fake_free_space_fot_test = None):
@@ -210,73 +245,73 @@ def is_enough_free_space_on_server(fake_free_space_fot_test = None):
             return True
         else: return False
 
-# def check_server_disk_usage(test_free_space = None):
-#     global STORAGE_USAGE_LAST_CALL
-#     # do not check the server disk usage if it has been checked less than a minute ago
-#     # it can happen if files are already on the server
-#     current_timestamp = time.time()
-#     if STORAGE_USAGE_LAST_CALL == 0 or current_timestamp - STORAGE_USAGE_LAST_CALL > STORAGE_USAGE_WAITING_TIME:
-#         STORAGE_USAGE_LAST_CALL = current_timestamp
-#         # call the server
-#         free_space = get_server_free_space() if test_free_space is None else test_free_space
-#         # if the server is almost full, pause the uploads
-#         if free_space < STORAGE_FREE_LIMIT:
-#             # TODO this has not been tested
-#             while free_space < STORAGE_FREE_LIMIT:
-#                 logger.warning(f"Storage free space is below {STORAGE_FREE_LIMIT // 2**30}GB, uploads are paused for now...")
-#                 # wait 15 minutes before checking again
-#                 wait(STORAGE_FREE_LIMIT_SLEEP)
-#                 free_space = get_server_free_space() if test_free_space is None else test_free_space
-#                 # at this point, the server can accept uploads
-#                 logger.info("Storage free space is above the limit, uploads can resume now")
-
-
 ### PROGRESS FILE MANAGEMENT ###
 
 def delete_progress_file():
-    if os.path.exists(PROGRESS_FILE): os.remove(PROGRESS_FILE)
+    if os.path.exists(get_progress_file()): os.remove(get_progress_file())
 
 def read_progress_file():
-	current_file = ""
-	current_size = 0
-	total_size = 0
-    # open the file
-	if os.path.exists(PROGRESS_FILE): 
-		with open(PROGRESS_FILE) as file:
+    # prepare values to return
+    file = ""
+    size = 0
+    # prepare variables
+    current_file = ""
+    current_size = 0
+    total_size = 0
+    current_line = ""
+    current_line_number = 0
+    # open the file with a try/except block
+    try:
+        with open(get_progress_file()) as file:
             # read line by line
-			for line in file:
-				line = line.rstrip()
-				if line != "":
-					if line.startswith(" "):
+            for line in file:
+                current_line = line # used in case of error
+                current_line_number += 1
+                line = line.rstrip()
+                if line != "":
+                    if line.startswith(" "):
                         # on lines indicating the progress, store the size that is given
-						current_size = int(line.split()[0].replace(".", ""))
-					else:
+                        current_size = int(line.split()[0].replace(".", ""))
+                    else:
                         # on lines indicating which file is being transferred (can be several when transferring a folder)
                         # add the last size that was recorded (so we do not add up the size at 25% and 50% for the same file)
-						total_size += current_size # this size should correspond to the size of the previous file
-						current_size = 0
-						current_file = line # store the name of the file currently transferred
-        # return the basename of the file (or name of the folder) and the size corresponding to the complete amount of what has been transferred
-		return [current_file.split("/")[0], total_size + current_size]
-	else:
-		return ["", 0]
+                        total_size += current_size # this size should correspond to the size of the previous file
+                        current_size = 0
+                        current_file = line # store the name of the file currently transferred
+        file = current_file.split("/")[0]
+        size = total_size + current_size
+    except Exception as e:
+        logger.error(f"Error on line {current_line_number}: {current_line}")
+        logger.error(e)
+    return [file, size]
+    
 
-# def get_progress_for_job(job_id, owner):
-#     # read the progress file
-#     [current_file, current_amount] = read_progress_file()
-#     # prepare a dict for the results
-#     progress_dict = {}
-#     # look for the files in the queue
-#     for file in SEND_QUEUE:
-#         id, username, filepath, _, _, size = file
-#         if job_id == int(id) and owner == username:
-#             filename = os.path.basename(filepath)
-#             if size > 0 and os.path.basename(filename) == current_file:
-#                 progress_dict[filename] = int(current_amount * 100 / size)
-#                 logger.info(f"Job {job_id}: File '{filename}' is being uploaded, current progress is {progress_dict[filename]}%")
-#             else:
-#                 progress_dict[filename] = 0
-#     return progress_dict
+# def read_progress_file():
+# 	current_file = ""
+# 	current_size = 0
+# 	total_size = 0
+#     # open the file
+# 	# if os.path.exists(PROGRESS_FILE): 
+# 	if os.path.exists(get_progress_file()): 
+#         # with open(PROGRESS_FILE) as file:
+# 		with open(get_progress_file()) as file:
+#             # read line by line
+# 			for line in file:
+# 				line = line.rstrip()
+# 				if line != "":
+# 					if line.startswith(" "):
+#                         # on lines indicating the progress, store the size that is given
+# 						current_size = int(line.split()[0].replace(".", ""))
+# 					else:
+#                         # on lines indicating which file is being transferred (can be several when transferring a folder)
+#                         # add the last size that was recorded (so we do not add up the size at 25% and 50% for the same file)
+# 						total_size += current_size # this size should correspond to the size of the previous file
+# 						current_size = 0
+# 						current_file = line # store the name of the file currently transferred
+#         # return the basename of the file (or name of the folder) and the size corresponding to the complete amount of what has been transferred
+# 		return [current_file.split("/")[0], total_size + current_size]
+# 	else:
+# 		return ["", 0]
 
 def get_progress_for_job(job_id, files):
     # read the progress file
@@ -293,74 +328,6 @@ def get_progress_for_job(job_id, files):
         else:
             progress_dict[filename] = 0
     return progress_dict
-      
 
-### QUEUE MANAGEMENT ###
 
-# # each time the user wants to send files, the files are put in a queue and a job id is returned; the queue and the id are not stored and will be reseted when the daemon is stopped
-# SEND_QUEUE = list()
-# # we use another queue to store the ids of the jobs canceled, so we do not have to worry about synchronizing the main queue between threads
-# CANCEL_QUEUE = list()
-# # global variables to store the progress of the file currently uploaded
-# CURRENT_JOB = ""
-# CURRENT_FILE = ""
-
-# def is_send_queue_empty():
-#     return len(SEND_QUEUE) == 0
-
-# def get_first_job_in_queue():
-#     job_id, _, file, _, job_dir, _ = SEND_QUEUE[0]
-#     # make sure that a folder does not end with a slash
-#     if os.path.isdir(file) and (file.endswith("/") or file.endswith("\\")): file = file[0:-1]
-#     # return the job id, the file to send and the job directory
-#     return job_id, file, job_dir
-
-# def is_job_cancelled(job_id):
-#     return job_id in CANCEL_QUEUE
-
-# def remove_first_job_in_queue():
-#     SEND_QUEUE.pop(0)
-
-# def clean_cancel_queue(job_id):
-#     for id in CANCEL_QUEUE:
-#         if id < job_id: CANCEL_QUEUE.remove(id)
-
-def extract_from_settings(settings):
-    job_id = settings["job_id"]
-    job_dir = settings["job_dir"]
-    owner = settings["owner"]
-    shared_files = json.loads(settings["files"]) # raw files
-    local_files = json.loads(settings["local_files"]) # fasta files
-    return job_id, job_dir, owner, shared_files, local_files
-
-# def add_to_queue(job_id, job_dir, owner, shared_files, local_files):
-#     nb = len(shared_files) + len(local_files)
-#     for file in local_files:
-#         if os.path.isfile(file) or os.path.isdir(file):
-#             logger.debug(f"Add '{file}' to the queue, it will be sent to {job_dir}")
-#             SEND_QUEUE.append([job_id, owner, file, nb, job_dir, get_size(file)])
-#     for file in shared_files:
-#         if os.path.isfile(file) or os.path.isdir(file):
-#             logger.debug(f"Add '{file}' to the queue, it will be shared for all jobs")
-#             SEND_QUEUE.append([job_id, owner, file, nb, "", get_size(file)])
-#     # send a blank file to the job folder to warn the controller that all the transfers are done for this job
-#     SEND_QUEUE.append([job_id, owner, FINAL_FILE, nb, job_dir, get_size(FINAL_FILE)])
-#     logger.info(f"Job {job_id}: {nb} files have been added to the queue")
-#     return nb
-
-# def list_shared_files_in_queue():
-#     # this function is called to check which files are stored on the server
-#     files = []
-#     for job_id, _, file, _, job_dir, _ in SEND_QUEUE:
-#         # do not list the fasta files or the files that have been cancelled
-#         if job_dir == "" and not job_id in CANCEL_QUEUE:
-#             files.append(os.path.basename(file))
-#     # return the list of files, without duplicates
-#     return list(dict.fromkeys(files))
-
-# def get_number_of_cancelled_file_transfers(job_id):
-#     return len(list(filter(lambda job: list(job)[0] == job_id, SEND_QUEUE)))
-
-# def cancel_job(job_id):
-#     CANCEL_QUEUE.append(job_id)
-#     return get_number_of_cancelled_file_transfers(job_id)
+reset_configuration()

@@ -12,8 +12,9 @@ storage.user = me
 # Path to the public key used to authenticate with the controller (no password)
 storage.public_key = cumulus.pem
 
-# Path to the RSync binary
+# Path to the RSync and SSH binary folders (if values are not pointing to existing folders, they will be considered in the PATH already)
 rsync.bin.path = path/to/rsync/bin/
+ssh.bin.path = path/to/ssh/bin/
 # Refresh rate in seconds, used to regularly check if there are files to transfer
 refresh.rate = 15
 # File used to indicate to the server that all the files have been transferred for a given job

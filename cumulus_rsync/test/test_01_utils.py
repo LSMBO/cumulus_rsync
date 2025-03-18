@@ -32,15 +32,13 @@
 
 import cumulus_rsync.cumulus_rsync_utils as utils
 import os
-# import re
 import shutil
 
 def test_initialization():
-    assert utils.STORAGE_HOST == "localhost"
+    assert utils.get_storage_host() == "localhost"
     utils.initialize("cumulus_rsync/test/cumulus_rsync.conf")
-    assert utils.STORAGE_HOST == "127.0.0.1"
-    # assert re.search("cumulus_rsync/test", utils.RSYNC_BIN_PATH) != None
-    assert len(utils.SURVEYED_DIRECTORIES) == 2
+    assert utils.get_storage_host() == "127.0.0.1"
+    assert len(utils.get_surveyed_directories()) == 2
 
 def test_get_size():
     # test a file
@@ -54,18 +52,18 @@ def test_get_storage_info():
     assert utils.get_storage_info() == "me@127.0.0.1:/storage"
 
 def test_get_rsync_command_shared():
-    options = f"-r --ignore-existing --exclude='*-wal' --progress -e 'ssh -l {utils.STORAGE_USER} -i \"{utils.STORAGE_KEY}\" -o \"StrictHostKeyChecking no\"' --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r"
+    options = f"-r --ignore-existing --exclude='*-wal' --progress -e 'ssh -l {utils.get_storage_user()} -i \"{utils.get_storage_key()}\" -o \"StrictHostKeyChecking no\"' --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r"
     file = "path/to/file"
-    remote_path = f"{utils.STORAGE_HOST}:{utils.STORAGE_PATH}/data"
-    expected_cmd = f"rsync {options} \"{file}\" \"{remote_path}\" > {utils.PROGRESS_FILE}"
+    remote_path = f"{utils.get_storage_host()}:{utils.get_storage_path()}/data"
+    expected_cmd = f"rsync {options} \"{file}\" \"{remote_path}\" > \"{utils.get_progress_file()}\""
     assert utils.get_rsync_command(file, "") == expected_cmd
 
 def test_get_rsync_command_local():
     job_dir = "job_123"
-    options = f"-r --ignore-existing --exclude='*-wal' --progress -e 'ssh -l {utils.STORAGE_USER} -i \"{utils.STORAGE_KEY}\" -o \"StrictHostKeyChecking no\"' --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r"
+    options = f"-r --ignore-existing --exclude='*-wal' --progress -e 'ssh -l {utils.get_storage_user()} -i \"{utils.get_storage_key()}\" -o \"StrictHostKeyChecking no\"' --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r"
     file = "path/to/file"
-    remote_path = f"{utils.STORAGE_HOST}:{utils.STORAGE_PATH}/jobs/{job_dir}"
-    expected_cmd = f"rsync {options} \"{file}\" \"{remote_path}\" > {utils.PROGRESS_FILE}"
+    remote_path = f"{utils.get_storage_host()}:{utils.get_storage_path()}/jobs/{job_dir}"
+    expected_cmd = f"rsync {options} \"{file}\" \"{remote_path}\" > \"{utils.get_progress_file()}\""
     # print(expected_cmd)
     assert utils.get_rsync_command(file, job_dir) == expected_cmd
 
@@ -80,7 +78,7 @@ def test_is_enough_free_space_on_server():
 
 def test_read_progress_file():
     # make a copy of the sample file
-    shutil.copyfile("cumulus_rsync/test/.cumulus.progress.test", utils.PROGRESS_FILE)
+    shutil.copyfile("cumulus_rsync/test/.cumulus.progress.test", utils.get_progress_file())
     # read the file
     [file, progress] = utils.read_progress_file()
     # test the output
@@ -103,8 +101,8 @@ def test_get_progress_for_job():
 
 def test_delete_progress_file():
     # test that file exists
-    assert os.path.isfile(utils.PROGRESS_FILE)
+    assert os.path.isfile(utils.get_progress_file())
     # delete it
     utils.delete_progress_file()
     # test that file no longer exists
-    assert os.path.isfile(utils.PROGRESS_FILE) == False
+    assert os.path.isfile(utils.get_progress_file()) == False

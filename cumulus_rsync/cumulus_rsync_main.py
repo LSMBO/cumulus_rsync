@@ -38,6 +38,7 @@ import cumulus_rsync.cumulus_rsync_utils as utils
 import cumulus_rsync.cumulus_rsync_db as db
 import cumulus_rsync.cumulus_rsync_survey as survey
 
+os.environ["CUMULUS_DEBUG"] = "1"
 # prepare the main variables
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
@@ -47,11 +48,11 @@ def daemon():
 	# start the main loop
 	while True:
 		# once a day, add all new files in the surveyed directories
-		if utils.SURVEY and survey.is_time_to_survey(utils.SURVEY_TIME):
+		if utils.is_survey_activated() and survey.is_time_to_survey(utils.get_survey_time()):
 			# TODO this was not tested live!!
 			logger.info("Entering survey mode...")
 			# get the new files
-			files = survey.survey_directories(utils.SURVEYED_DIRECTORIES, utils.SURVEY_DEPTH)
+			files = survey.survey_directories(utils.get_surveyed_directories(), utils.get_survey_depth())
 			# add the files to the queue with a fake job_id, no job_dir, fake owner and no local files
 			db.add_to_queue(0, "", "cumulus.surveyor", files, [], False)
 			# reset the boolean
@@ -71,7 +72,7 @@ def daemon():
 			# get the rsync command
 			cmd = utils.get_rsync_command(file, job_dir)
 			# call RSync
-			# logger.debug(cmd)
+			logger.debug(cmd)
 			# TODO do something if it fails
 			os.system(cmd)
 			# logger.info(f"RSYNC: Transfer of '{file}' is finished, {len(SEND_QUEUE)} file(s) are left in the queue")
@@ -81,10 +82,10 @@ def daemon():
 			utils.delete_progress_file()
 		else:
 			# wait for 15 seconds
-			utils.wait()
+			utils.wait(utils.get_refresh_rate())
 
 @app.route("/")
-def config(): return utils.VERSION
+def config(): return utils.get_version()
 
 @app.route("/send-rsync", methods=["POST"])
 def send_rsync():
@@ -123,12 +124,10 @@ def progress_rsync(owner, job_id):
 	return jsonify(progress_dict)
 
 def start():
-    from waitress import serve
-    # load the configuration
-    utils.initialize("cumulus_rsync.conf")
-    # start the daemon
-    threading.Thread(target=daemon, args=(), daemon=True).start()
-    # start waitress WSGI server
-    serve(app, host = utils.LOCAL_HOST, port = utils.LOCAL_PORT)
-
-#start()
+	from waitress import serve
+	# load the configuration
+	utils.initialize("cumulus_rsync.conf")
+	# start the daemon
+	threading.Thread(target=daemon, args=(), daemon=True).start()
+	# start waitress WSGI server
+	serve(app, host = utils.get_local_host(), port = utils.get_local_port())

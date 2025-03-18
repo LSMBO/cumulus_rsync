@@ -39,13 +39,13 @@ import cumulus_rsync.cumulus_rsync_db as db
 
 def test_connect():
     # delete the database if it exists;
-    if os.path.isfile(utils.QUEUE_FILE): os.remove(utils.QUEUE_FILE)
+    if os.path.isfile(utils.get_queue_file()): os.remove(utils.get_queue_file())
     # call the connect function
     cnx, _ = db.connect()
     # we can disconnect right away
     cnx.close()
     # the database should be created
-    assert os.path.isfile(utils.QUEUE_FILE)
+    assert os.path.isfile(utils.get_queue_file())
 
 def test_count_entries_in_queue():
     assert db.count_entries_in_queue() == 0
@@ -99,5 +99,5 @@ def test_cancel_job():
 
 def test_end_test():
     # this is the last test, remove the temp database
-    if os.path.isfile(utils.QUEUE_FILE): os.remove(utils.QUEUE_FILE)
-    assert os.path.isfile(utils.QUEUE_FILE) == False
+    if os.path.isfile(utils.get_queue_file()): os.remove(utils.get_queue_file())
+    assert os.path.isfile(utils.get_queue_file()) == False

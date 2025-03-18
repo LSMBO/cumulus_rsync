@@ -38,9 +38,8 @@ import cumulus_rsync.cumulus_rsync_utils as utils
 logger = logging.getLogger(__name__)
 
 def connect():
-    # job_id, owner, file, nb, job_dir, get_size(file)
     # connect to the database, create it if it does not exist yet
-    cnx = sqlite3.connect(utils.QUEUE_FILE, isolation_level = None)
+    cnx = sqlite3.connect(utils.get_queue_file(), isolation_level = None)
     cursor = cnx.cursor()
 	# create the main table if it does not exist
     cursor.execute("""
@@ -117,7 +116,7 @@ def add_to_queue(job_id, job_dir, owner, shared_files, local_files, insert_final
             cursor.execute(f"INSERT INTO queue VALUES (?, ?, ?, ?, ?, ?, ?)", (None, job_id, owner, file, utils.get_size(file), nb, None))
     # send a blank file to the job folder to warn the controller that all the transfers are done for this job
     if insert_final_file:
-        cursor.execute(f"INSERT INTO queue VALUES (?, ?, ?, ?, ?, ?, ?)", (None, job_id, owner, utils.FINAL_FILE, utils.get_size(utils.FINAL_FILE), nb, job_dir))
+        cursor.execute(f"INSERT INTO queue VALUES (?, ?, ?, ?, ?, ?, ?)", (None, job_id, owner, utils.get_final_file(), utils.get_size(utils.get_final_file()), nb, job_dir))
     # commit the changes and return the number of added entries to the queue (minus the final file)
     cnx.commit()
     cnx.close()
@@ -129,7 +128,7 @@ def list_files_for_job(job_id, owner):
     cnx, cursor = connect()
     # this function is called to check which files are stored on the server
     files = []
-    results = cursor.execute(f"SELECT file_path, file_size FROM queue WHERE job_id = ? AND owner = ? AND file_path != ? ORDER BY id", (job_id, owner, utils.FINAL_FILE))
+    results = cursor.execute(f"SELECT file_path, file_size FROM queue WHERE job_id = ? AND owner = ? AND file_path != ? ORDER BY id", (job_id, owner, utils.get_final_file()))
     for file, size in results:
         files.append([file, size])
     # disconnect and return the list of files
@@ -141,7 +140,7 @@ def list_shared_files_in_queue():
     cnx, cursor = connect()
     # this function is called to check which files are stored on the server
     files = []
-    results = cursor.execute(f"SELECT DISTINCT file_path FROM queue WHERE job_dir IS NULL AND file_path != ?", (utils.FINAL_FILE,))
+    results = cursor.execute(f"SELECT DISTINCT file_path FROM queue WHERE job_dir IS NULL AND file_path != ?", (utils.get_final_file(),))
     for file, in results:
         files.append(os.path.basename(file))
     # disconnect and return the sorted list of files
