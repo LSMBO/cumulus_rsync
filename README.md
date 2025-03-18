@@ -11,6 +11,9 @@ Another reason is that RSync requires a certificate to connect to the server, us
 To run the Cumulus RSync Agent work, you need to:
 
 * Provide a working certificate to contact the controller where Cumulus_server is listening. At the moment, the expected certificate cannot require a password.
+    * Make sure the permissions for the certificate are not too open.
+    * Linux users should use "chmod 600"
+    * On Windows the inheritance should be disabled and all ACL deleted, especially for "Users" and "Authenticated Users", then add a specific user account and only allow Read permission
 * Make sure to have RSync installed and added to the PATH. On Windows machines, use https://itefix.net/cwrsync
 * Fill the cumulus_rsync.conf file
 * It is advised to create a service to make sure the agent will be working at all times. On Windows, you can use NSSM: https://nssm.cc/
