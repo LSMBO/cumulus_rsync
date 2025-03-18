@@ -164,8 +164,6 @@ def initialize(config_file):
     # add RSync and SSH to path
     if os.path.isdir(get_rsync_path()): os.environ["PATH"] = get_rsync_path() + os.pathsep + os.environ["PATH"]
     if os.path.isdir(get_ssh_path()): os.environ["PATH"] = get_ssh_path() + os.pathsep + os.environ["PATH"]
-    os.system("where rsync")
-    os.system("where ssh")
     # display a message if the survey mode is active
     if is_survey_activated():
         if get_survey_depth() < 1: CONFIG["survey.depth"] = 1
