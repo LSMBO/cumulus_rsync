@@ -201,10 +201,17 @@ def wait(seconds = 15):
 
 ### FUNCTIONS FOR REMOTE SERVER ###
 
+def is_controller_reachable():
+    # send a blank file to the controller, just to test the connection
+    cmd = f"rsync -e 'ssh -l {get_storage_user()} -i \"{get_storage_key()}\" -o \"StrictHostKeyChecking no\"' --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r \"{get_final_file()}\" \"{get_storage_host()}:{get_storage_path()}/tests\""
+    # logger.debug(cmd)
+    # return True if the controller is reachable
+    return os.system(cmd) == 0
+
 def get_rsync_command(file, job_dir):
     # Rsync options:
     # -r: recurse into directories
-    # --ignore-existing: skip updating files that exist on receiver
+    # --size-only: skip files that have the same size, this replaces --ignore-existing that skips files with the same name even if they had different sizes
     # --exclude: do not send wal files, they shouldn't even be here
     # --progress: monitor progression of the transfer on stdout
     # -e: specify the remote shell to use
@@ -212,8 +219,7 @@ def get_rsync_command(file, job_dir):
     #   -i: the path to the public key
     #   -o 'StrictHostKeyChecking no': do not ask if the key has to be trusted
     # --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r: make sure that directories have permission 755 and files 644
-    # TODO send the file even if it exists on receiver but with a different size
-    options = f"-r --ignore-existing --exclude='*-wal' --progress -e 'ssh -l {get_storage_user()} -i \"{get_storage_key()}\" -o \"StrictHostKeyChecking no\"' --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r"
+    options = f"-r --size-only --exclude='*-wal' --progress -e 'ssh -l {get_storage_user()} -i \"{get_storage_key()}\" -o \"StrictHostKeyChecking no\"' --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r"
     # determine the remote folder (either main storage, or job folder)
     remote_path = f"{get_storage_host()}:{get_storage_path()}/jobs/{job_dir}" if job_dir != "" else f"{get_storage_host()}:{get_storage_path()}/data"
     # log the action

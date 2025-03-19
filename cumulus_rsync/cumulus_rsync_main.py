@@ -80,6 +80,8 @@ def daemon():
 			db.remove_entry_from_queue(entry_id)
 			# delete the progress file
 			utils.delete_progress_file()
+			# wait half a second
+			utils.wait(0.5)
 		else:
 			# wait for 15 seconds
 			utils.wait(utils.get_refresh_rate())
@@ -127,6 +129,10 @@ def start():
 	from waitress import serve
 	# load the configuration
 	utils.initialize("cumulus_rsync.conf")
+	# check that the controller can be reached
+	if not utils.is_controller_reachable():
+		logger.error("The controller is not reachable, exiting...")
+		return
 	# start the daemon
 	threading.Thread(target=daemon, args=(), daemon=True).start()
 	# start waitress WSGI server
