@@ -285,8 +285,10 @@ def read_progress_file():
         file = current_file.split("/")[0]
         size = total_size + current_size
     except Exception as e:
-        logger.error(f"Error on line {current_line_number}: {current_line}")
-        logger.error(e)
+        # do not log if the exception is a FileNotFoundError, it means that the file does not exist yet
+        if not isinstance(e, FileNotFoundError):
+            logger.error(f"Error on line {current_line_number}: {current_line}")
+            logger.error(e)
     return [file, size]
     
 
