@@ -89,6 +89,8 @@ def remove_entry_from_queue(entry_id):
     cnx.commit()
     # disconnect and return the content
     cnx.close()
+    # if the queue is empty after this operation, log the event
+    if is_queue_empty(): logger.info("The queue is now empty")
 
 def get_job_owner(job_id):
     # connect to the database
