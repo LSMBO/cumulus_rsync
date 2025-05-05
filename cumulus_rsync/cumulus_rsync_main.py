@@ -105,14 +105,14 @@ def list_rsync():
 
 @app.route("/cancel-rsync/<string:owner>/<int:job_id>")
 def cancel_rsync(owner, job_id):
-		if db.get_job_owner == owner:
-			# use a different queue, to avoid removing elements already transferred and deleted from the queue (or use a async queue)
-			logger.info(f"Receiving cancel order for job {job_id}")
-			nb = db.cancel_job(job_id)
-			# return the number of file transfer canceled
-			return f"{nb} transfers have been canceled"
-		else:
-			return "You are not the owner of this job"
+	if db.get_job_owner(job_id) == owner:
+		# use a different queue, to avoid removing elements already transferred and deleted from the queue (or use a async queue)
+		logger.info(f"Receiving cancel order for job {job_id}")
+		nb = db.cancel_job(job_id)
+		# return the number of file transfer canceled
+		return f"{nb} transfers have been canceled"
+	else:
+		return "You are not the owner of this job"
 	
 @app.route("/progress-rsync/<string:owner>/<int:job_id>")
 def progress_rsync(owner, job_id):
