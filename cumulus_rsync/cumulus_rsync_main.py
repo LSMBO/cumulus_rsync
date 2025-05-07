@@ -38,7 +38,7 @@ import cumulus_rsync.cumulus_rsync_utils as utils
 import cumulus_rsync.cumulus_rsync_db as db
 import cumulus_rsync.cumulus_rsync_survey as survey
 
-# os.environ["CUMULUS_DEBUG"] = "1"
+os.environ["CUMULUS_DEBUG"] = "1"
 # prepare the main variables
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
@@ -62,12 +62,6 @@ def daemon():
 			# get the first and oldest entry in the queue
 			entry_id, job_id, file, job_dir = db.get_first_job_in_queue()
 			# logger.debug(f"Job {job_id}: file '{file}' of size {size}")
-			# check if the file is available, if it's not, send a message to the server to fail the job
-			if not os.path.exists(file):
-				logger.warning(f"File '{file}' does not exist, further transfers for this job will be canceled, and the job will get the status 'failed'")
-				db.cancel_job(job_id)
-				utils.fail_job(job_id, f"File '{file}' does not exist, further transfers for this job will be canceled, and the job will get the status 'failed'")
-				continue
 			# make sure that there is enough space on the server
 			i = 0
 			while not utils.is_enough_free_space_on_server():
@@ -111,7 +105,9 @@ def list_rsync():
 
 @app.route("/cancel-rsync/<string:owner>/<int:job_id>")
 def cancel_rsync(owner, job_id):
-	if db.get_job_owner(job_id) == owner:
+	if not db.is_job_in_queue(job_id):
+		return f"Job {job_id} does not exist in the queue"
+	elif db.get_job_owner(job_id) == owner:
 		# use a different queue, to avoid removing elements already transferred and deleted from the queue (or use a async queue)
 		logger.info(f"Receiving cancel order for job {job_id}")
 		nb = db.cancel_job(job_id)

@@ -236,9 +236,14 @@ def get_server_free_space():
 
 def fail_job(job_id, error_message):
     # send a message to the server to fail the job
-    requests.post(f"http://{get_storage_host()}:{get_storage_port()}/fail", json = {"job_id": job_id, "error_message": error_message})
+    logger.warning(error_message)
+    try:
+        r = requests.post(f"http://{get_storage_host()}:{get_storage_port()}/fail", data = {"job_id": job_id, "error_message": error_message})
+        r.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        logger.warning("Could not send the message", e)
 
-def is_enough_free_space_on_server(fake_free_space_fot_test = None):
+def is_enough_free_space_on_server(fake_free_space_for_test = None):
     global STORAGE_USAGE_LAST_CALL
     # if the last check was less than a minute ago, say it's ok (the time of last check is only recorded when it's successful)
     current_timestamp = time.time()
@@ -246,7 +251,7 @@ def is_enough_free_space_on_server(fake_free_space_fot_test = None):
         return True
     else:
          # call the server
-        free_space = get_server_free_space() if fake_free_space_fot_test is None else fake_free_space_fot_test
+        free_space = get_server_free_space() if fake_free_space_for_test is None else fake_free_space_for_test
         # if the server has enough space, store the current time and return True
         if free_space > STORAGE_FREE_LIMIT:
             STORAGE_USAGE_LAST_CALL = current_timestamp

@@ -66,6 +66,17 @@ def count_entries_in_queue():
     cnx.close()
     return nb
 
+def is_job_in_queue(job_id):
+    # connect to the database
+    cnx, cursor = connect()
+    # check if the job is in the queue
+    cursor.execute(f"SELECT COUNT(*) FROM queue WHERE job_id = ?", (job_id,))
+    # get the content
+    nb = cursor.fetchone()[0]
+    # disconnect and return the value
+    cnx.close()
+    return nb > 0
+
 def is_queue_empty():
     return count_entries_in_queue() == 0
 
@@ -108,22 +119,35 @@ def add_to_queue(job_id, job_dir, owner, shared_files, local_files, insert_final
     cnx, cursor = connect()
     # count the total number of files in this job
     nb = len(shared_files) + len(local_files)
+    # count the number of files that are available
+    nb_available = 0
     for file in local_files:
-        if os.path.isfile(file) or os.path.isdir(file):
-            logger.debug(f"Add '{file}' to the queue, it will be sent to {job_dir}")
-            cursor.execute(f"INSERT INTO queue VALUES (?, ?, ?, ?, ?, ?, ?)", (None, job_id, owner, file, utils.get_size(file), nb, job_dir))
+        if os.path.isfile(file) or os.path.isdir(file): nb_available += 1
     for file in shared_files:
-        if os.path.isfile(file) or os.path.isdir(file):
-            logger.debug(f"Add '{file}' to the queue, it will be shared for all jobs")
-            cursor.execute(f"INSERT INTO queue VALUES (?, ?, ?, ?, ?, ?, ?)", (None, job_id, owner, file, utils.get_size(file), nb, None))
-    # send a blank file to the job folder to warn the controller that all the transfers are done for this job
-    if insert_final_file:
-        cursor.execute(f"INSERT INTO queue VALUES (?, ?, ?, ?, ?, ?, ?)", (None, job_id, owner, utils.get_final_file(), utils.get_size(utils.get_final_file()), nb, job_dir))
-    # commit the changes and return the number of added entries to the queue (minus the final file)
-    cnx.commit()
-    cnx.close()
-    logger.info(f"Job {job_id}: {nb} files have been added to the queue")
-    return nb
+        if os.path.isfile(file) or os.path.isdir(file): nb_available += 1
+    if nb_available != nb:
+        utils.fail_job(job_id, f"Job {job_id}: {nb - nb_available} files were not available, sending a request to set the status of the job to 'failed'")
+        return 0
+    else:
+        # add the files to the queue
+        for file in local_files:
+            if os.path.isfile(file) or os.path.isdir(file):
+                logger.debug(f"Add '{file}' to the queue, it will be sent to {job_dir}")
+                cursor.execute(f"INSERT INTO queue VALUES (?, ?, ?, ?, ?, ?, ?)", (None, job_id, owner, file, utils.get_size(file), nb, job_dir))
+                nb_available += 1
+        for file in shared_files:
+            if os.path.isfile(file) or os.path.isdir(file):
+                logger.debug(f"Add '{file}' to the queue, it will be shared for all jobs")
+                cursor.execute(f"INSERT INTO queue VALUES (?, ?, ?, ?, ?, ?, ?)", (None, job_id, owner, file, utils.get_size(file), nb, None))
+                nb_available += 1
+        # send a blank file to the job folder to warn the controller that all the transfers are done for this job
+        if insert_final_file:
+            cursor.execute(f"INSERT INTO queue VALUES (?, ?, ?, ?, ?, ?, ?)", (None, job_id, owner, utils.get_final_file(), utils.get_size(utils.get_final_file()), nb, job_dir))
+        # commit the changes and return the number of added entries to the queue (minus the final file)
+        cnx.commit()
+        cnx.close()
+        logger.info(f"Job {job_id}: {nb} files have been added to the queue")
+        return nb
 
 def list_files_for_job(job_id, owner):
     # connect to the database
