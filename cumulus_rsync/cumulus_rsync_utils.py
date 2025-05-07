@@ -234,6 +234,10 @@ def get_server_free_space():
     response = requests.get(f"http://{get_storage_host()}:{get_storage_port()}/diskusage")
     return response.json()[2]
 
+def fail_job(job_id, error_message):
+    # send a message to the server to fail the job
+    requests.post(f"http://{get_storage_host()}:{get_storage_port()}/fail", json = {"job_id": job_id, "error_message": error_message})
+
 def is_enough_free_space_on_server(fake_free_space_fot_test = None):
     global STORAGE_USAGE_LAST_CALL
     # if the last check was less than a minute ago, say it's ok (the time of last check is only recorded when it's successful)

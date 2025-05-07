@@ -60,8 +60,14 @@ def daemon():
 		# check if there is something to do
 		if not db.is_queue_empty():
 			# get the first and oldest entry in the queue
-			entry_id, _, file, job_dir = db.get_first_job_in_queue()
+			entry_id, job_id, file, job_dir = db.get_first_job_in_queue()
 			# logger.debug(f"Job {job_id}: file '{file}' of size {size}")
+			# check if the file is available, if it's not, send a message to the server to fail the job
+			if not os.path.exists(file):
+				logger.warning(f"File '{file}' does not exist, further transfers for this job will be canceled, and the job will get the status 'failed'")
+				db.cancel_job(job_id)
+				utils.fail_job(job_id, f"File '{file}' does not exist, further transfers for this job will be canceled, and the job will get the status 'failed'")
+				continue
 			# make sure that there is enough space on the server
 			i = 0
 			while not utils.is_enough_free_space_on_server():
