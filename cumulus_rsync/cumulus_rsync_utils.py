@@ -284,7 +284,7 @@ def read_progress_file():
                 if line != "":
                     if line.startswith(" "):
                         # on lines indicating the progress, store the size that is given
-                        current_size = int(line.split()[0].replace(".", ""))
+                        current_size = int(line.split()[0].replace(".", "").replace(",", ""))
                     else:
                         # on lines indicating which file is being transferred (can be several when transferring a folder)
                         # add the last size that was recorded (so we do not add up the size at 25% and 50% for the same file)
