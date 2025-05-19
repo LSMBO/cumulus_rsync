@@ -11,7 +11,7 @@ charset-normalizer==3.3.2
 click==8.1.7
 colorama==0.4.6
 cryptography==43.0.0
--e git+https://github.com/LSMBO/cumulus_rsync.git@da95a13cbfe04812bc44a587956ddde23abd6be8#egg=cumulus_rsync
+-e git+https://github.com/LSMBO/cumulus_rsync.git@ff45d05a3dcdd85918da142f50acd4fcf9749af0#egg=cumulus_rsync
 Flask==3.0.3
 gitdb==4.0.11
 GitPython==3.1.43
@@ -62,7 +62,7 @@ tenacity==8.4.2
 texttable==1.7.0
 toml==0.10.2
 toolz==0.12.1
-tornado==6.4.1
+tornado==6.5
 typing_extensions==4.12.2
 tzdata==2024.1
 urllib3==2.2.2
