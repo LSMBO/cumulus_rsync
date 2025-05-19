@@ -1,4 +1,4 @@
-# Cumulus RSync Agent (CuRSA)
+# Cumulus RSync Agent
  
 A Flask REST API for Cumulus.
 
