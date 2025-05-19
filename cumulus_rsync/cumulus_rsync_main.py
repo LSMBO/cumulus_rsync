@@ -38,7 +38,7 @@ import cumulus_rsync.cumulus_rsync_utils as utils
 import cumulus_rsync.cumulus_rsync_db as db
 import cumulus_rsync.cumulus_rsync_survey as survey
 
-os.environ["CUMULUS_DEBUG"] = "1"
+# os.environ["CUMULUS_DEBUG"] = "1"
 # prepare the main variables
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
