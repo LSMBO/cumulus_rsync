@@ -25,7 +25,7 @@ progress.file = .cumulus.progress
 queue.file = cumulus_rsync_queue.db
 
 # Cumulus RSync agent version number
-version = 1.0.0
+version = 1.0.1
 
 # Survey configuration
 survey.enabled = false
