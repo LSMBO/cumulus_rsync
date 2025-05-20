@@ -63,7 +63,7 @@ def test_get_first_job_in_queue():
     # add another job
     db.add_to_queue(7, "another/path/to/another/job_dir", "another.test.user", ["cumulus_rsync/test/File3.raw","cumulus_rsync/test/File2.raw","cumulus_rsync/test/File1.raw"], ["cumulus_rsync/test/File.fasta"])
     # get the first job
-    _, job_id, file_path, job_dir = db.get_first_job_in_queue()
+    _, job_id, file_path, job_dir, _ = db.get_first_job_in_queue()
     # make sure that the results match the first job added, not the one we just added
     assert job_id == 11
     assert file_path == "cumulus_rsync/test/File.fasta"
@@ -71,11 +71,11 @@ def test_get_first_job_in_queue():
 
 def test_remove_entry_from_queue():
     # get the id from the first job
-    id, _, _, _ = db.get_first_job_in_queue()
+    id, _, _, _, _ = db.get_first_job_in_queue()
     # remove the first job
     db.remove_entry_from_queue(id)
     # the id from the next first job would be a increment of the last id
-    next_id, _, _, job_dir = db.get_first_job_in_queue()
+    next_id, _, _, job_dir, _ = db.get_first_job_in_queue()
     assert next_id == id + 1
     assert job_dir == ""
     # two jobs were added, each with 3 shared files, 1 local file, and 1 final file

@@ -73,10 +73,17 @@ def get_queue_file(): return get_config_value("queue.file")
 def get_rsync_path(): return get_config_value("rsync.bin.path")
 def get_ssh_path(): return get_config_value("ssh.bin.path")
 def get_version(): return get_config_value("version")
-def is_survey_activated(): return get_config_value("survey.enabled")
 def get_survey_depth(): return get_config_value("survey.depth")
 def get_survey_time(): return get_config_value("survey.time")
 def get_surveyed_directories(): return get_config_value("surveyed_directories")
+def is_survey_activated(): 
+    if get_config_value("survey.enabled") is None or not get_config_value("survey.enabled"): return False
+    # check if the survey is activated
+    if get_survey_time() is None: return False
+    # check if survey_time is set and valid
+    if not re.match(r"^\d\d:\d\d$", get_survey_time()): return False
+    # otherwise, return True
+    return True
 
 def reset_configuration():
     global CONFIG
@@ -166,8 +173,9 @@ def initialize(config_file):
     if os.path.isdir(get_ssh_path()): os.environ["PATH"] = get_ssh_path() + os.pathsep + os.environ["PATH"]
     # display a message if the survey mode is active
     if is_survey_activated():
-        if get_survey_depth() < 1: CONFIG["survey.depth"] = 1
-        if get_survey_depth() > 3: CONFIG["survey.depth"] = 3
+        if get_survey_depth() is None: CONFIG["survey.depth"] = 1
+        elif get_survey_depth() < 1: CONFIG["survey.depth"] = 1
+        elif get_survey_depth() > 3: CONFIG["survey.depth"] = 3
         logger.warning("SURVEY MODE IS ACTIVE!")
         logger.warning(f"The following directories will be surveyed at {get_survey_time()}")
 

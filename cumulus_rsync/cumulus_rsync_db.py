@@ -84,13 +84,13 @@ def get_first_job_in_queue():
     # connect to the database
     cnx, cursor = connect()
     # get the first entry in the queue
-    cursor.execute(f"SELECT id, job_id, file_path, job_dir FROM queue ORDER BY id ASC LIMIT 1")
+    cursor.execute(f"SELECT id, job_id, file_path, job_dir, owner FROM queue ORDER BY id ASC LIMIT 1")
     # get the content
-    entry_id, job_id, file_path, job_dir = cursor.fetchone()
+    entry_id, job_id, file_path, job_dir, owner = cursor.fetchone()
     if job_dir is None: job_dir = ""
     # disconnect and return the content
     cnx.close()
-    return entry_id, job_id, file_path, job_dir
+    return entry_id, job_id, file_path, job_dir, owner
 
 def remove_entry_from_queue(entry_id):
     # connect to the database
@@ -185,3 +185,14 @@ def cancel_job(job_id):
     # disconnect and return the number of entries removed
     cnx.close()
     return nb
+
+def get_jobs_per_owner(owner):
+    # connect to the database
+    cnx, cursor = connect()
+    # get the number of jobs per owner
+    cursor.execute(f"SELECT job_id FROM queue WHERE owner = ?", (owner))
+    # get the content
+    results = cursor.fetchall()
+    # disconnect and return the content
+    cnx.close()
+    return results

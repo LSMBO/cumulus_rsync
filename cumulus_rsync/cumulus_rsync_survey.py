@@ -38,6 +38,7 @@ import time
 logger = logging.getLogger(__name__)
 
 # this variable is local, not from the config file
+SURVEY_OWNER = "cumulus.surveyor"
 IS_SURVEY_DONE = False
 MIN_AGE_IN_HOURS = 2
 MAX_AGE_IN_HOURS = 36
@@ -46,7 +47,8 @@ MAX_AGE_IN_HOURS = 36
 def is_time_to_survey(survey_time):
     global IS_SURVEY_DONE
     # reset the boolean if the day has changed since the last survey
-    if IS_SURVEY_DONE and time.strftime("%H:%M") < survey_time: IS_SURVEY_DONE = False
+    # if IS_SURVEY_DONE and time.strftime("%H:%M") < survey_time: IS_SURVEY_DONE = False
+    # actually if IS_SURVEY_DONE is True, it means that the transfer from previous day is still in progress, so we do not reset it
     # return True if the time is right and the survey has not been done yet
     logger.debug(f"Survey time: {survey_time}, current time: {time.strftime('%H:%M')}, survey done: {IS_SURVEY_DONE}")
     return time.strftime("%H:%M") >= survey_time and IS_SURVEY_DONE == False
@@ -77,11 +79,11 @@ def is_valid(file_path, isfile, regex):
     if not re.match(regex, os.path.basename(file_path)): 
         # print(f"File '{file_path}' does not match the regex '{regex}'")
         return False
-    # do not consider the files that are too older than 36 hours (only files from the last 24 hours will be actually sent)
+    # do not consider the files that are older than 36 hours (only files from the last 24 hours will be actually sent)
     if MAX_AGE_IN_HOURS >= 0 and os.path.getmtime(file_path) < time.time() - MAX_AGE_IN_HOURS * 3600: 
         # print(f"File '{file_path}' is too old")
         return False
-    # do not consider the files that are too recent (less than 2 hours) to avoid sending files that are still in acquisition
+    # do not consider the files that are too recent (less than 2 hours) to avoid sending files that may still be in use
     if os.path.getmtime(file_path) > time.time() - MIN_AGE_IN_HOURS * 3600: 
         # print(f"File '{file_path}' is too recent")
         return False

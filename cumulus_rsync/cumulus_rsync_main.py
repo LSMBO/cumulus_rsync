@@ -54,13 +54,14 @@ def daemon():
 			# get the new files
 			files = survey.survey_directories(utils.get_surveyed_directories(), utils.get_survey_depth())
 			# add the files to the queue with a fake job_id, no job_dir, fake owner and no local files
-			db.add_to_queue(0, "", "cumulus.surveyor", files, [], False)
+			db.add_to_queue(0, "", survey.SURVEY_OWNER, files, [], False)
 			# reset the boolean
-			survey.set_surveyed_today()
+			# TODO this should only be done once all the surveyed files are transferred
+			# survey.set_surveyed_today()
 		# check if there is something to do
 		if not db.is_queue_empty():
 			# get the first and oldest entry in the queue
-			entry_id, job_id, file, job_dir = db.get_first_job_in_queue()
+			entry_id, job_id, file, job_dir, owner = db.get_first_job_in_queue()
 			# logger.debug(f"Job {job_id}: file '{file}' of size {size}")
 			# make sure that there is enough space on the server
 			i = 0
@@ -80,6 +81,9 @@ def daemon():
 			db.remove_entry_from_queue(entry_id)
 			# delete the progress file
 			utils.delete_progress_file()
+			# if the job was a survey, reset the boolean if there is no more survey files in the queue
+			if owner == survey.SURVEY_OWNER and len(db.get_jobs_per_owner(survey.SURVEY_OWNER)) == 0:
+				survey.set_surveyed_today()
 			# wait half a second
 			utils.wait(0.5)
 		else:
