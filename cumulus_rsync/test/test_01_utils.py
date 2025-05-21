@@ -52,7 +52,7 @@ def test_get_storage_info():
     assert utils.get_storage_info() == "me@127.0.0.1:/storage"
 
 def test_get_rsync_command_shared():
-    options = f"-r --ignore-existing --exclude='*-wal' --progress -e 'ssh -l {utils.get_storage_user()} -i \"{utils.get_storage_key()}\" -o \"StrictHostKeyChecking no\"' --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r"
+    options = f"-r --size-only --exclude='*-wal' --progress -e 'ssh -l {utils.get_storage_user()} -i \"{utils.get_storage_key()}\" -o \"StrictHostKeyChecking no\"' --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r"
     file = "path/to/file"
     remote_path = f"{utils.get_storage_host()}:{utils.get_storage_path()}/data"
     expected_cmd = f"rsync {options} \"{file}\" \"{remote_path}\" > \"{utils.get_progress_file()}\""
@@ -60,7 +60,7 @@ def test_get_rsync_command_shared():
 
 def test_get_rsync_command_local():
     job_dir = "job_123"
-    options = f"-r --ignore-existing --exclude='*-wal' --progress -e 'ssh -l {utils.get_storage_user()} -i \"{utils.get_storage_key()}\" -o \"StrictHostKeyChecking no\"' --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r"
+    options = f"-r --size-only --exclude='*-wal' --progress -e 'ssh -l {utils.get_storage_user()} -i \"{utils.get_storage_key()}\" -o \"StrictHostKeyChecking no\"' --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r"
     file = "path/to/file"
     remote_path = f"{utils.get_storage_host()}:{utils.get_storage_path()}/jobs/{job_dir}"
     expected_cmd = f"rsync {options} \"{file}\" \"{remote_path}\" > \"{utils.get_progress_file()}\""
