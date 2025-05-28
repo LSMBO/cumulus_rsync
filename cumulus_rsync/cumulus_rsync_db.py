@@ -38,6 +38,13 @@ import cumulus_rsync.cumulus_rsync_utils as utils
 logger = logging.getLogger(__name__)
 
 def connect():
+    """
+    Establishes a connection to the SQLite database specified by the queue file path.
+    Creates the 'queue' table if it does not already exist, with columns for job and file metadata.
+
+    Returns:
+        tuple: A tuple containing the SQLite connection object and the associated cursor.
+    """
     # connect to the database, create it if it does not exist yet
     cnx = sqlite3.connect(utils.get_queue_file(), isolation_level = None)
     cursor = cnx.cursor()
@@ -56,6 +63,12 @@ def connect():
     return cnx, cursor
 
 def count_entries_in_queue():
+    """
+    Counts the number of entries in the 'queue' table of the database.
+
+    Returns:
+        int: The number of entries currently present in the 'queue' table.
+    """
     # connect to the database
     cnx, cursor = connect()
     # count the number of entries in the queue
@@ -67,6 +80,15 @@ def count_entries_in_queue():
     return nb
 
 def is_job_in_queue(job_id):
+    """
+    Checks if a job with the specified job_id exists in the queue table of the database.
+
+    Args:
+        job_id (int): The unique identifier of the job to check in the queue.
+
+    Returns:
+        bool: True if the job is present in the queue, False otherwise.
+    """
     # connect to the database
     cnx, cursor = connect()
     # check if the job is in the queue
@@ -78,9 +100,27 @@ def is_job_in_queue(job_id):
     return nb > 0
 
 def is_queue_empty():
+    """
+    Checks if the queue is empty.
+
+    Returns:
+        bool: True if the queue has no entries, False otherwise.
+    """
     return count_entries_in_queue() == 0
 
 def get_first_job_in_queue():
+    """
+    Fetches the first job entry from the queue table in the database.
+
+    Connects to the database, retrieves the first entry in the 'queue' table ordered by 'id' in ascending order,
+    and returns its details. If 'job_dir' is None, it is replaced with an empty string before returning.
+
+    Returns:
+        tuple: A tuple containing (entry_id, job_id, file_path, job_dir, owner) of the first job in the queue.
+
+    Raises:
+        Exception: If the database connection fails or the query does not return any results.
+    """
     # connect to the database
     cnx, cursor = connect()
     # get the first entry in the queue
@@ -93,6 +133,19 @@ def get_first_job_in_queue():
     return entry_id, job_id, file_path, job_dir, owner
 
 def remove_entry_from_queue(entry_id):
+    """
+    Removes an entry from the queue in the database by its ID.
+
+    Connects to the database, deletes the entry with the specified ID from the 'queue' table,
+    commits the transaction, and closes the connection. If the queue becomes empty after the
+    removal, logs an informational message.
+
+    Args:
+        entry_id (int): The ID of the entry to remove from the queue.
+
+    Raises:
+        Exception: If there is an error connecting to the database or executing the SQL statement.
+    """
     # connect to the database
     cnx, cursor = connect()
     # remove the entry from the queue
@@ -104,6 +157,18 @@ def remove_entry_from_queue(entry_id):
     if is_queue_empty(): logger.info("The queue is now empty")
 
 def get_job_owner(job_id):
+    """
+    Retrieve the owner of a specific job from the database.
+
+    Args:
+        job_id (int): The unique identifier of the job whose owner is to be retrieved.
+
+    Returns:
+        str: The owner of the specified job.
+
+    Raises:
+        Exception: If the database connection fails or the query does not return a result.
+    """
     # connect to the database
     cnx, cursor = connect()
     # get the owner of the job
@@ -115,6 +180,25 @@ def get_job_owner(job_id):
     return owner
 
 def add_to_queue(job_id, job_dir, owner, shared_files, local_files, insert_final_file = True):
+    """
+    Adds files associated with a job to the transfer queue in the database.
+
+    This function checks the availability of all files (both local and shared) for a given job.
+    If any file is missing, the job is marked as failed and no files are added to the queue.
+    Otherwise, all available files are inserted into the queue table, and an optional final file
+    is added to signal completion of the transfer for this job.
+
+    Args:
+        job_id (int): The unique identifier for the job.
+        job_dir (str): The directory where job files will be sent.
+        owner (str): The owner of the job.
+        shared_files (list of str): List of shared file paths to be queued.
+        local_files (list of str): List of local file paths to be queued.
+        insert_final_file (bool, optional): Whether to insert a final file to indicate job completion. Defaults to True.
+
+    Returns:
+        int: The number of files added to the queue (excluding the final file), or 0 if the job failed due to missing files.
+    """
     # connect to the database
     cnx, cursor = connect()
     # count the total number of files in this job
@@ -150,6 +234,22 @@ def add_to_queue(job_id, job_dir, owner, shared_files, local_files, insert_final
         return nb
 
 def list_files_for_job(job_id, owner):
+    """
+    Retrieves a sorted list of files associated with a specific job and owner from the database.
+
+    Args:
+        job_id (int): The unique identifier of the job to filter files by.
+        owner (str): The owner of the job/files.
+
+    Returns:
+        list: A sorted list of [file_path, file_size] pairs for files stored on the server,
+              excluding the final file as determined by utils.get_final_file().
+
+    Note:
+        The function establishes a database connection, queries the 'queue' table for files
+        matching the given job_id and owner, excludes the final file, and returns the results
+        sorted by file path and size.
+    """
     # connect to the database
     cnx, cursor = connect()
     # this function is called to check which files are stored on the server
@@ -162,6 +262,18 @@ def list_files_for_job(job_id, owner):
     return sorted(files)
 
 def list_shared_files_in_queue():
+    """
+    Retrieves a sorted list of unique file names currently present in the 'queue' table of the database,
+    where the 'job_dir' field is NULL and the 'file_path' does not match the final file path.
+
+    Returns:
+        list[str]: A sorted list of base file names (not full paths) that are queued for processing.
+
+    Notes:
+        - Connects to the database using the `connect()` function.
+        - Excludes files whose 'file_path' matches the value returned by `utils.get_final_file()`.
+        - Closes the database connection before returning.
+    """
     # connect to the database
     cnx, cursor = connect()
     # this function is called to check which files are stored on the server
@@ -174,6 +286,22 @@ def list_shared_files_in_queue():
     return sorted(files)
 
 def cancel_job(job_id):
+    """
+    Cancels a job by removing all its entries from the 'queue' table in the database.
+
+    Args:
+        job_id (int): The identifier of the job to cancel.
+
+    Returns:
+        int: The number of entries removed from the queue for the specified job.
+
+    Raises:
+        Any exceptions raised by the database connection or execution will propagate.
+
+    Note:
+        This function assumes that the `connect()` function is defined elsewhere and returns
+        a tuple of (connection, cursor) for the database.
+    """
     # connect to the database
     cnx, cursor = connect()
     # count the number of entries for this job
@@ -187,6 +315,18 @@ def cancel_job(job_id):
     return nb
 
 def get_jobs_per_owner(owner):
+    """
+    Retrieve all job IDs from the queue table for a specific owner.
+
+    Args:
+        owner (str): The owner whose jobs are to be retrieved.
+
+    Returns:
+        list: A list of tuples containing job IDs associated with the specified owner.
+
+    Raises:
+        Exception: If there is an error connecting to the database or executing the query.
+    """
     # connect to the database
     cnx, cursor = connect()
     # get the number of jobs per owner

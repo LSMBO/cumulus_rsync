@@ -38,12 +38,29 @@ import cumulus_rsync.cumulus_rsync_utils as utils
 import cumulus_rsync.cumulus_rsync_db as db
 import cumulus_rsync.cumulus_rsync_survey as survey
 
-# os.environ["CUMULUS_DEBUG"] = "1"
+os.environ["CUMULUS_DEBUG"] = "1"
 # prepare the main variables
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
 
 def daemon():
+	"""
+	Runs the Cumulus RSync daemon, which continuously monitors and processes file transfer jobs.
+
+	The daemon performs the following tasks in a loop:
+	- If survey mode is activated and it's time to survey, scans the specified directories for new files and adds them to the transfer queue.
+		- The survey mode is used to automatically discover new files in specified directories and add them to the transfer queue.
+		- This should strongly reduce the amount of time spent to transfer files to the server.
+		- Ideally this should be done at night.
+	- Checks if there are pending jobs in the queue:
+		- For each job, ensures there is enough free storage space before proceeding.
+		- Constructs and executes the rsync command to transfer the file.
+		- Removes the job from the queue upon completion and deletes any associated progress files.
+		- If the job was initiated by the survey process and all survey jobs are done, marks the survey as completed for the day.
+	- Waits for a configurable interval when the queue is empty.
+
+	Logging is performed at various stages to provide status updates and warnings.
+	"""
 	logger.info(f"Cumulus RSync daemon is running, data will be sent to {utils.get_storage_info()}")
 	# start the main loop
 	while True:
@@ -91,10 +108,28 @@ def daemon():
 			utils.wait(utils.get_refresh_rate())
 
 @app.route("/")
-def config(): return utils.get_version()
+def config(): 
+	"""
+	Retrieve the current version of the application from the utils module.
+	This route is also used to check if the application is running.
+
+	Returns:
+		str: The version string of the application.
+	"""
+	return utils.get_version()
 
 @app.route("/send-rsync", methods=["POST"])
 def send_rsync():
+		"""
+		Handles a POST request to add files to the rsync queue.
+
+		Reads form data from the request, extracts job and file information,
+		adds the specified files to the processing queue, and returns a message
+		indicating how many files were added.
+
+		Returns:
+			str: A message indicating the number of files added to the queue.
+		"""
 		# read the POST form
 		job_id, job_dir, owner, shared_files, local_files = utils.extract_from_settings(request.form)
 		# add the files to the queue
@@ -104,11 +139,30 @@ def send_rsync():
 
 @app.route("/list-rsync")
 def list_rsync():
+	"""
+	Returns a JSON response containing the list of shared files currently in the queue, with duplicates removed.
+
+	Returns:
+		flask.Response: A JSON response with the list of unique shared files.
+	"""
 	# return the list of files, without duplicates
 	return jsonify(db.list_shared_files_in_queue())
 
 @app.route("/cancel-rsync/<string:owner>/<int:job_id>")
 def cancel_rsync(owner, job_id):
+	"""
+	Cancels an rsync job if it exists in the queue and the requester is the owner.
+
+	Args:
+		owner (str): The identifier of the user requesting the cancellation.
+		job_id (int): The unique identifier of the rsync job to cancel.
+
+	Returns:
+		str: A message indicating the result of the cancellation attempt. Possible messages include:
+			- Confirmation of the number of transfers canceled.
+			- Notification if the job does not exist in the queue.
+			- Notification if the requester is not the owner of the job.
+	"""
 	if not db.is_job_in_queue(job_id):
 		return f"Job {job_id} does not exist in the queue"
 	elif db.get_job_owner(job_id) == owner:
@@ -122,6 +176,18 @@ def cancel_rsync(owner, job_id):
 	
 @app.route("/progress-rsync/<string:owner>/<int:job_id>")
 def progress_rsync(owner, job_id):
+	"""
+	Monitor and report the progress of an rsync job for a specific owner.
+
+	Args:
+		owner (str): The owner of the job.
+		job_id (int): The unique identifier of the rsync job.
+
+	Returns:
+		flask.Response: A JSON response containing a dictionary with the progress
+		status of each file associated with the job. Files not listed are considered
+		already transferred.
+	"""
 	# logger.info(f"Monitoring progress for job {job_id} owned by {owner}")
 	# get the list of files for this job
 	files = db.list_files_for_job(job_id, owner)
@@ -132,6 +198,15 @@ def progress_rsync(owner, job_id):
 	return jsonify(progress_dict)
 
 def start():
+	"""
+	Starts the cumulus_rsync main process.
+
+	This function performs the following steps:
+	1. Loads the application configuration from 'cumulus_rsync.conf'.
+	2. Checks if the server is reachable; logs an error and exits if not.
+	3. Starts the daemon process in a background thread.
+	4. Launches the Waitress WSGI server to serve the application using the local host and port from the configuration.
+	"""
 	from waitress import serve
 	# load the configuration
 	utils.initialize("cumulus_rsync.conf")
