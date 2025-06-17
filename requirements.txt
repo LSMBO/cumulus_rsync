@@ -11,7 +11,7 @@ charset-normalizer==3.3.2
 click==8.1.7
 colorama==0.4.6
 cryptography==43.0.0
--e git+https://github.com/LSMBO/cumulus_rsync.git@ff45d05a3dcdd85918da142f50acd4fcf9749af0#egg=cumulus_rsync
+-e git+https://github.com/LSMBO/cumulus_rsync.git@567b420648a87d9ab0dd4533db223c6ad18f9350#egg=cumulus_rsync
 Flask==3.0.3
 gitdb==4.0.11
 GitPython==3.1.43
@@ -33,7 +33,7 @@ paramiko==3.4.1
 pefile==2023.2.7
 pillow==10.3.0
 pluggy==1.5.0
-protobuf==5.27.2
+protobuf==6.31.1
 psutil==7.0.0
 py7zr==0.22.0
 pyarrow==16.1.0
