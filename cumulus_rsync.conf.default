@@ -23,6 +23,8 @@ final.file = .cumulus.rsync
 progress.file = .cumulus.progress
 # SQLite file used to store the queue of files to transfer
 queue.file = cumulus_rsync_queue.db
+# Remote input folder (a subdirectory within the job folder where local files will be sent)
+remote.input.folder = input
 
 # Cumulus RSync agent version number
 version = 1.0.1

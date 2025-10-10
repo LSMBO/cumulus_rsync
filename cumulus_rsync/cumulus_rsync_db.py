@@ -127,7 +127,12 @@ def get_first_job_in_queue():
     cursor.execute(f"SELECT id, job_id, file_path, job_dir, owner FROM queue ORDER BY id ASC LIMIT 1")
     # get the content
     entry_id, job_id, file_path, job_dir, owner = cursor.fetchone()
-    if job_dir is None: job_dir = ""
+    # set the destination directory
+    if job_dir is None: job_dir = "" # shared data go to shared folder
+    # elif file_path == utils.get_final_file(): job_dir = job_dir # final file goes to job folder
+    # else: job_dir = f"{job_dir}/{utils.get_remote_input_folder()}" # other files go to job/input folder
+    elif file_path != utils.get_final_file(): job_dir = f"{job_dir}/{utils.get_remote_input_folder()}" # input files go to job/input folder
+    # else: job_dir = job_dir # final file goes to job folder
     # disconnect and return the content
     cnx.close()
     return entry_id, job_id, file_path, job_dir, owner

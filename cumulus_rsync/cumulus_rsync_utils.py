@@ -84,6 +84,7 @@ def get_refresh_rate(): return get_config_value("refresh.rate")
 def get_final_file(): return get_config_value("final.file")
 def get_progress_file(): return get_config_value("progress.file")
 def get_queue_file(): return get_config_value("queue.file")
+def get_remote_input_folder(): return get_config_value("remote.input.folder")
 def get_rsync_path(): return get_config_value("rsync.bin.path")
 def get_ssh_path(): return get_config_value("ssh.bin.path")
 def get_version(): return get_config_value("version")
@@ -150,6 +151,7 @@ def reset_configuration():
     CONFIG["final.file"] = ".cumulus.rsync" # a blank file to transfer at the end of each job, to tell the controller that all the files have been transferred
     CONFIG["progress.file"] = ".cumulus.progress"
     CONFIG["queue.file"] = "cumulus_rsync_queue.db"
+    CONFIG["remote.input.folder"] = "input" # a subdirectory within the job folder where local files will be sent
     CONFIG["version"] = ""
     CONFIG["rsync.bin.path"] = "" # the path to the rsync binary
     CONFIG["ssh.bin.path"] = "" # the path to the ssh binary
@@ -190,20 +192,21 @@ def read_config_file(config_file):
         # split the line and remove the spaces
         [key, value] = list(map(lambda item: item.strip(), line.split("=")))
         # store the values
-        if key == "local.host": CONFIG[key] = value
-        elif key == "local.port": CONFIG[key] = value
-        elif key == "storage.path": CONFIG[key] = value
-        elif key == "storage.host": CONFIG[key] = value
-        elif key == "storage.port": CONFIG[key] = value
-        elif key == "storage.user": CONFIG[key] = value
-        elif key == "storage.public_key": CONFIG[key] = os.path.abspath(value)
+        # if key == "local.host": CONFIG[key] = value
+        # elif key == "local.port": CONFIG[key] = value
+        # elif key == "storage.path": CONFIG[key] = value
+        # elif key == "storage.host": CONFIG[key] = value
+        # elif key == "storage.port": CONFIG[key] = value
+        # elif key == "storage.user": CONFIG[key] = value
+        if key == "storage.public_key": CONFIG[key] = os.path.abspath(value)
         elif key == "refresh.rate": CONFIG[key] = int(value)
-        elif key == "final.file": CONFIG[key] = value
+        # elif key == "final.file": CONFIG[key] = value
         elif key == "progress.file": CONFIG[key] = os.path.abspath(value)
         elif key == "queue.file": CONFIG[key] = os.path.abspath(value)
+        # elif key == "remote.input.folder": CONFIG[key] = value
         elif key == "rsync.bin.path": CONFIG[key] = os.path.abspath(value)
         elif key == "ssh.bin.path": CONFIG[key] = os.path.abspath(value)
-        elif key == "version": CONFIG[key] = value
+        # elif key == "version": CONFIG[key] = value
         # keys for survey
         elif key == "survey.enabled": CONFIG[key] = value.lower() == "true" or value.lower() == "on"
         elif key == "survey.depth" and str(value).isnumeric: CONFIG[key] = int(value)
@@ -211,6 +214,7 @@ def read_config_file(config_file):
         elif match := re.search("survey\\.(.*)\\.dir", key, re.IGNORECASE): directories[match.group(1)] = {"dir": value}
         elif match := re.search("survey\\.(.*)\\.regex", key, re.IGNORECASE): directories[match.group(1)]["regex"] = value
         elif match := re.search("survey\\.(.*)\\.isfile", key, re.IGNORECASE): directories[match.group(1)]["isfile"] = value.lower() == "true" or value.lower() == "on"
+        else: CONFIG[key] = value
     CONFIG["surveyed_directories"] = directories
     f.close()
 
@@ -354,7 +358,7 @@ def is_controller_reachable():
         bool: True if the controller is reachable (rsync command succeeds), False otherwise.
     """
     # send a blank file to the controller, just to test the connection
-    cmd = f"rsync -e 'ssh -l {get_storage_user()} -i \"{get_storage_key()}\" -o \"StrictHostKeyChecking no\"' --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r \"{get_final_file()}\" \"{get_storage_host()}:{get_storage_path()}/tests\""
+    cmd = f"rsync -e 'ssh -l {get_storage_user()} -i \"{get_storage_key()}\" -o \"StrictHostKeyChecking no\"' --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r \"{get_final_file()}\" \"{get_storage_host()}:{get_storage_path()}/temp\""
     # logger.debug(cmd)
     # return True if the controller is reachable
     return os.system(cmd) == 0

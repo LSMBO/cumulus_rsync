@@ -67,7 +67,7 @@ def test_get_first_job_in_queue():
     # make sure that the results match the first job added, not the one we just added
     assert job_id == 11
     assert file_path == "cumulus_rsync/test/File.fasta"
-    assert job_dir == "path/to/job_dir"
+    assert job_dir == "path/to/job_dir/input"
 
 def test_remove_entry_from_queue():
     # get the id from the first job
