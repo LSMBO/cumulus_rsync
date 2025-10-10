@@ -29,10 +29,25 @@ remote.input.folder = input
 # Cumulus RSync agent version number
 version = 1.0.1
 
+## Survey mode: 
+# automatically transfer new files to the controller
+# if activated, new files in the given directories will be added to the list, with conditions:
+# - files must match the regex
+# - files must be less than 36 hours old
+# - files must be at least 2 hours old
+
 # Survey configuration
 survey.enabled = false
+# time when the survey would start, in the format HH:MM
 survey.time = 23:00
+# depth indicate how far we look within the directories
+# for instance, a depth of 3 means that we will look into 1/2/3/*.raw (<1> corresponding to <dir>)
 survey.depth = 1
+# add as many entries as you like
+# each entry mush have 3 sub-entries: 
+# - dir: where to look for (must not contain a dot)
+# - regex: how to determine which data to select
+# - isfile: whether the data is a file or a folder
 survey.astral.dir = D:/path/to/astral/data
 survey.astral.regex = AT.*.raw
 survey.astral.isfile = true
