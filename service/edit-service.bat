@@ -6,4 +6,4 @@ set script_path=%~dp0
 rem call nssm to start the service
 "%script_path%\nssm-2.24\win64\nssm.exe" edit "Cumulus RSync Agent"
 
-pause
+rem pause
