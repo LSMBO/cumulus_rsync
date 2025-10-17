@@ -240,6 +240,8 @@ def initialize(config_file):
     Raises:
         FileNotFoundError: If the required public key file is not found.
     """
+    # TODO the logging could be configured after reading the config file to set the log level from there
+    # TODO this could also allow to set CUMULUS_DEBUG from the config file
     # configure the logs
     log_format = "[%(asctime)s] %(levelname)s [%(name)s.%(funcName)s:%(lineno)d] %(message)s"
     log_date = "%Y/%m/%d %H:%M:%S"
@@ -247,7 +249,7 @@ def initialize(config_file):
     else:
         logging.basicConfig(
             handlers = [RotatingFileHandler(filename = f"{LOGS_DIR}/cumulus-rsync.log", maxBytes = 10000000, backupCount = 10)],
-            level = logging.INFO,
+            level = logging.DEBUG,
             format = log_format,
             datefmt = log_date
         )
