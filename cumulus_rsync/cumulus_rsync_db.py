@@ -212,8 +212,10 @@ def add_to_queue(job_id, job_dir, owner, shared_files, local_files, insert_final
     nb_available = 0
     for file in local_files:
         if os.path.isfile(file) or os.path.isdir(file): nb_available += 1
+        else: logger.warning(f"File '{file}' is not available")
     for file in shared_files:
         if os.path.isfile(file) or os.path.isdir(file): nb_available += 1
+        else: logger.warning(f"File '{file}' is not available")
     if nb_available != nb:
         utils.fail_job(job_id, f"Job {job_id}: {nb - nb_available} files were not available, sending a request to set the status of the job to 'failed'")
         return 0
