@@ -3,7 +3,8 @@
 A Flask REST API for Cumulus.
 
 This module of Cumulus will transfer all the data to the server, using RSync to reduce the amount of transfer when it's possible.
-The reason for a separate module, rather than transferring the data from the client, is to avoid parallel transfers, as well as to make sure the files are transferred from the best place in your local network. For instance, if your data are stored on a shared folder in the network, it is best to run CuRSA directly on the server hosting that shared folder and transfer the data from there.
+The reason for a separate module, rather than transferring the data from the client, is to avoid parallel transfers, as well as to make sure the files are transferred from the best place in your local network. For instance, if your data are stored on a shared folder in the network, it is best to run the RSync agent directly on the server hosting that shared folder and transfer the data from there.
+
 Another reason is that RSync requires a certificate to connect to the server, using a separate module avoids sharing that certificate with the users.
 
 
